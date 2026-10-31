@@ -290,27 +290,41 @@ public partial class TaskbarWidget : Window
         return true;
     }
 
+    // The widgets of other apps seen on the taskbar, asked again by their handle: while Start is open, Windows lifts the
+    // taskbar and the windows it owns (NowPlaying's widget) into a band that EnumWindows does not list, and this widget
+    // then took NowPlaying's place, under it (seen on October 31: 454 → 166 while Start was open).
+    private readonly HashSet<IntPtr> othersSeen = [];
+
     /// <summary>
     /// The windows of other apps laid over the taskbar, as this one (NowPlaying's widget…): visible, not hidden by
     /// Windows (cloaked), within the height of the taskbar, narrower than half of it. Explorer's own windows are not
     /// counted, nor LocalBell's (this process, the app).
     /// </summary>
-    private static List<RECT> OtherWidgets(IntPtr tray, RECT bar, int appProcessId)
+    private List<RECT> OtherWidgets(IntPtr tray, RECT bar, int appProcessId)
     {
-        var list = new List<RECT>();
         uint own = (uint)Environment.ProcessId, app = (uint)appProcessId;
         GetWindowThreadProcessId(tray, out uint explorer);
+        var found = new HashSet<IntPtr>();
+        bool IsWidget(IntPtr window, out RECT r)
+        {
+            r = default;
+            if (!IsWindowVisible(window)) return false;
+            GetWindowThreadProcessId(window, out uint process);
+            if (process == own || process == app || process == explorer) return false;
+            if (DwmGetWindowAttribute(window, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0) return false;
+            return GetWindowRect(window, out r) && r.Top >= bar.Top - 2 && r.Bottom <= bar.Bottom + 2 && r.Height >= 16
+                && r.Width >= 16 && r.Width < bar.Width / 2 && r.Left < bar.Right && r.Right > bar.Left;
+        }
+        var list = new List<RECT>();
         EnumWindows((window, _) =>
         {
-            if (!IsWindowVisible(window)) return true;
-            GetWindowThreadProcessId(window, out uint process);
-            if (process == own || process == app || process == explorer) return true;
-            if (DwmGetWindowAttribute(window, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0) return true;
-            if (GetWindowRect(window, out var r) && r.Top >= bar.Top - 2 && r.Bottom <= bar.Bottom + 2 && r.Height >= 16
-                && r.Width >= 16 && r.Width < bar.Width / 2 && r.Left < bar.Right && r.Right > bar.Left)
-                list.Add(r);
+            if (IsWidget(window, out var r) && found.Add(window)) list.Add(r);
             return true;
         }, IntPtr.Zero);
+        foreach (var window in othersSeen)
+            if (!found.Contains(window) && IsWindow(window) && IsWidget(window, out var r) && found.Add(window)) list.Add(r);
+        othersSeen.Clear();
+        othersSeen.UnionWith(found);
         return list;
     }
 
@@ -353,10 +367,19 @@ public partial class TaskbarWidget : Window
             catch (Exception ex) when (ex is ElementNotAvailableException or InvalidOperationException or COMException or ArgumentException) { }
             Dispatcher.BeginInvoke(() =>
             {
+                lookingForButtons = false;
+                // No Start button where there was one: the taskbar is busy (Start or search open lifts it, and its buttons
+                // then read as off screen; the widget went over the weather for 20 s, October 31). The places known
+                // stay; read again in a moment.
+                if (start is null && startLeft is not null)
+                {
+                    buttonsAgainTimer.Stop();
+                    buttonsAgainTimer.Start();
+                    return;
+                }
                 weather = widgets;
                 startLeft = start?.Left;
                 buttonsFoundAt = DateTime.UtcNow;
-                lookingForButtons = false;
                 Place();
             });
         });

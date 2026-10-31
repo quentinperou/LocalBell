@@ -167,9 +167,13 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     buttons); placed after the Widgets (weather) button found by UI Automation, else (Windows 10, icons aligned left,
     or Settings → near the clock) left of `TrayNotifyWnd` and of the weather (with the icons on the left Windows puts
     it there); the buttons looked for again when the taskbar changes (its rectangle, its notification area,
-    `TaskbarAl`), 2 s later (they slide), and every 10 s; past the windows of other apps laid over the taskbar
-    (`OtherWidgets`: visible, not cloaked, within the bar's height, narrower than half of it, not Explorer's nor
-    LocalBell's; looked for every 2 s); colours from Windows' mode (`WindowsTheme`). The flyout is the app's, active
+    `TaskbarAl`), 2 s later (they slide), and every 10 s; a read without the Start button is dropped (Start or search
+    open: the taskbar lifted into band 6, its buttons read as off screen, the widget went over the weather); past
+    the windows of other apps laid over the taskbar (`OtherWidgets`: visible, not cloaked, within the bar's height,
+    narrower than half of it, not Explorer's nor LocalBell's; looked for every 2 s, and those seen asked again by
+    their handle: with Start open EnumWindows does not list the taskbar's owned windows, and the widget went under
+    NowPlaying's); colours from Windows' mode (`WindowsTheme`). Watched from the shell on October 31 (z-order,
+    `WindowFromPoint`, `GetWindowBand`, every 50 ms): 3 minutes of Start, rings and flyout, the widget always in place. The flyout is the app's, active
     while shown, hidden when it loses the focus (the missed rings are then seen). `--no-widget` for the second
     LocalBell of a try.
   - `Menus.xaml` + `Services/PopupMenu`: the menus of the bell near the clock and of the widget, drawn as Windows 11's
