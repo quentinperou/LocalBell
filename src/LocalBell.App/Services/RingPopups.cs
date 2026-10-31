@@ -26,6 +26,11 @@ public sealed class RingPopups
     {
         this.settings = settings;
         bell.Tick += (_, _) => RingAgain();
+        // The user's own file: the next ring waits for its real length (known once the file is open).
+        BellSound.FileLengthKnown += (_, length) =>
+        {
+            if (bell.IsEnabled && settings.Sound == BellSound.OwnFile) bell.Interval = length + TimeSpan.FromSeconds(1);
+        };
     }
 
     /// <summary>
@@ -92,8 +97,11 @@ public sealed class RingPopups
         BellSound.Play(settings.Sound, settings.SoundFile, settings.Volume);
     }
 
-    /// <summary>Every popup answered or closed, or the last ring over: silence, and the PC's sound as it was.</summary>
-    private void StopBell()
+    /// <summary>
+    /// Every popup answered or closed, or the last ring over, or LocalBell quits (Quit, Windows shutting down, an
+    /// update): silence, and the PC's sound as it was.
+    /// </summary>
+    public void StopBell()
     {
         bell.Stop();
         ringsLeft = 0;

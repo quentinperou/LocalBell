@@ -22,7 +22,7 @@ Version **0.1.0**, not released. **Git repository since October 31, 2026** (bran
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
 repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
-- Done: the network (`LocalBell.Core`, tested: 52 tests), the icon, the app: the list window, the popup (discreet
+- Done: the network (`LocalBell.Core`, tested: 111 tests with the update feed), the icon, the app: the list window, the popup (discreet
   or loud), the ring sounds, the bell near the clock with its menu, "do not disturb" (moon button, banner, menu),
   favourites (star), single instance, **Settings on six pages** (as approved: name of the PC, start with Windows,
   do not disturb, language, theme; sound + own WAV/MP3 file, volume, ring when Windows is muted, repeat; popup style
@@ -59,7 +59,18 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
 - **The widget in a process of its own, owned by the taskbar** (October 31, his "Oui, vas-y"), as NowPlaying's: it
   stays over the taskbar with Start open and whatever raises the taskbar; a hung widget process is killed and started
   again (tried). He checked it stays with Start open ("Oui, il reste").
-- Next: a remembered window place, a first install at the shop.
+- **Audit** (October 31, late; `.local\audit-2026-10-31.md`, git-ignored): fixed before the first install: UDP port
+  taken → the app goes on without hearing announcements (a note on the Network page); unreadable settings keep their
+  id (`settings.json.bad`, tolerant enums, written to the disk before the swap); no new widget process while Windows
+  closes the app (an update); the PC's sound put back on Quit; the user's own sound file rung whole; installer x64
+  only; `build.ps1` keeps `dist\store`. Network hardening: `/peers` followed for LAN addresses only (64 at most, 8 at
+  a time), no HTTP redirects, answers ≤ 64 KB, 32 connections at a time on the server, directory capped at 250 and
+  only verified PCs kept, rings throttled per address (5, then one every 2 s), replies taken only for rings sent to
+  that PC, invisible characters dropped from names, ids `[0-9A-Za-z-]`, IPv4 only, loops that log instead of dying,
+  the hand-added addresses asked in parallel. Left for later: the list C of the audit.
+- Next: a build installed on two PCs to try them together.
+  Ideas for later: a remembered window place; **keyboard shortcuts to ring each PC** (his idea, October 31: one per
+  PC, set in Settings; global shortcuts, so mind the clashes with other apps).
 
 ## Design decisions (approved by the author, October 31, 2026)
 
@@ -183,7 +194,7 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     change applied and saved at once; a language change builds the windows again (texts are read when a window is
     built).
   - `Properties/Strings.resx` + `Strings.fr.resx`, `{local:Tr Key}` in XAML, `Strings.Get/Format/Count` in code.
-- `tests/LocalBell.Core.Tests` (xUnit, 85 tests): the protocol, the addresses, the directory, the server, `BellNode`
+- `tests/LocalBell.Core.Tests` (xUnit, 111 tests): the protocol, the addresses, the directory, the server, `BellNode`
   end to end (several nodes on 127.0.0.1, without UDP: nothing leaves the PC), the update feed, and the parity of the
   two languages.
 
@@ -223,7 +234,8 @@ the drive: `git -c safe.directory=<path> …` on the shop PC.
 ## Releasing
 
 As PageCompose: bump `Directory.Build.props`, commit "LocalBell X.Y.Z" (the author's commits, **no Co-Authored-By
-line**), lightweight tag `vX.Y.Z`; the workflow builds and publishes the release with the installer (a tag with a
-suffix is a pre-release, for the Beta channel). Never push nor sign in to GitHub from the shop PC: he publishes from
+line**), lightweight tag `vX.Y.Z`, `git push origin main vX.Y.Z` (the tag alone leaves `main` behind on GitHub); the
+workflow builds and publishes the release with the installer (a tag with a suffix is a pre-release, for the Beta
+channel). Never push nor sign in to GitHub from the shop PC: he publishes from
 home with his account. The Store version goes out **by hand**, as NowPlaying's: `scripts\build-store.ps1`, then a new
 submission in Partner Center (the `.msix`, the texts of `store/listing.md`); final versions only (x.y.z.0).

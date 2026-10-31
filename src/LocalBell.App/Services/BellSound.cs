@@ -34,6 +34,12 @@ public static class BellSound
     private static SoundPlayer? player;
     private static MediaPlayer? media;
 
+    /// <summary>
+    /// The user's file is open and its length known (<see cref="Length"/> said 3 s until then): the bell waits for the
+    /// whole file before ringing again (a longer file was cut after 4 s, October 31).
+    /// </summary>
+    public static event EventHandler<TimeSpan>? FileLengthKnown;
+
     /// <summary>How long the sound lasts (a file: its length once opened, else 3 s).</summary>
     public static TimeSpan Length(string sound) => sound switch
     {
@@ -49,9 +55,14 @@ public static class BellSound
         if (volume <= 0) return;
         if (sound == OwnFile && File.Exists(file))
         {
-            media = new MediaPlayer { Volume = Loudness(volume) };
-            media.Open(new Uri(file));
-            media.Play();
+            var opened = media = new MediaPlayer { Volume = Loudness(volume) };
+            opened.MediaOpened += (_, _) =>
+            {
+                if (ReferenceEquals(media, opened) && opened.NaturalDuration.HasTimeSpan)
+                    FileLengthKnown?.Invoke(null, opened.NaturalDuration.TimeSpan);
+            };
+            opened.Open(new Uri(file));
+            opened.Play();
             return;
         }
         player = new SoundPlayer(new MemoryStream(Wav(sound, volume)));

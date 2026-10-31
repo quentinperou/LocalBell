@@ -30,6 +30,45 @@ public class PeerDirectoryTests
     }
 
     [Fact]
+    public void AFullDirectory_MakesRoomFromTheOldestOfflineUnverifiedPc()
+    {
+        var time = new ManualTime();
+        var directory = new PeerDirectory(time, capacity: 3);
+        directory.Remember(Info("known", "Atelier"), new IPEndPoint(A, 53318)); // offline, verified (an earlier run)
+        directory.Seen(Info("junk1", "?"), A);
+        time.Now += TimeSpan.FromMinutes(1);
+        directory.Seen(Info("junk2", "?"), A);
+        time.Now += TimeSpan.FromMinutes(5);
+        directory.Expire(TimeSpan.FromSeconds(100)); // all offline now
+
+        Assert.Equal(SeenChange.Appeared, directory.Seen(Info("new", "Caisse"), B));
+        Assert.Equal(["junk2", "known", "new"], directory.All().Select(p => p.Id).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void AFullDirectoryOfPcsOnline_TakesNoNewcomer()
+    {
+        var directory = new PeerDirectory(new ManualTime(), capacity: 2);
+        directory.Seen(Info("1", "Atelier"), A);
+        directory.Seen(Info("2", "Caisse"), A);
+        Assert.Equal(SeenChange.None, directory.Seen(Info("3", "Bureau"), B));
+        Assert.Null(directory.Find("3"));
+    }
+
+    [Fact]
+    public void Verified_ComesFromAnAnswer_OrFromAnEarlierRun()
+    {
+        var directory = new PeerDirectory(new ManualTime());
+        directory.Seen(Info("1", "Atelier"), A);
+        directory.Remember(Info("2", "Caisse"), new IPEndPoint(B, 53318));
+        Assert.False(directory.Find("1")!.Verified);
+        Assert.True(directory.Find("2")!.Verified);
+
+        directory.Confirm("1");
+        Assert.True(directory.Find("1")!.Verified);
+    }
+
+    [Fact]
     public void Seen_AtAnotherAddress_KeepsBothNewestFirst()
     {
         var directory = new PeerDirectory(new ManualTime());

@@ -26,7 +26,7 @@ public sealed record PeerInfo
     /// <summary>The same, safe to keep and show; null when it cannot be used (no id, no port).</summary>
     public PeerInfo? Checked()
     {
-        if (Id.Length is 0 or > BellProtocol.MaxIdLength || Port is <= 0 or > 65535 || !Enum.IsDefined(Status)) return null;
+        if (!BellProtocol.IsId(Id) || Port is <= 0 or > 65535 || !Enum.IsDefined(Status)) return null;
         string name = BellProtocol.Clean(Name, BellProtocol.MaxNameLength);
         return this with { Name = name.Length > 0 ? name : "?", Version = BellProtocol.Clean(Version, 32) };
     }

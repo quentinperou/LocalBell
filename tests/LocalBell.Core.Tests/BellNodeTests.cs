@@ -192,5 +192,62 @@ public class BellNodeTests
     [InlineData("192.168.41.12:")]
     [InlineData("192.168.41.12:70000")]
     [InlineData(":53318")]
+    [InlineData("[fe80::1]:53318")]   // IPv6: LocalBell is IPv4 only
+    [InlineData("fe80::1")]
     public void ParseAddress_RefusesTheRest(string text) => Assert.Null(BellNode.ParseAddress(text));
+
+    [Fact]
+    public void ParseAddress_RefusesANameLongerThanDnsAllows() =>
+        Assert.Null(BellNode.ParseAddress(new string('a', 254)));
+
+    // A request as any host of the network could send it, straight to a node's server.
+    private static async Task<HttpResponseMessage> PostAsync(BellNode node, string path, object body)
+    {
+        using var http = new HttpClient();
+        return await http.PostAsync($"http://{AddressOf(node)}{path}", new ByteArrayContent(BellProtocol.Serialize(body)));
+    }
+
+    private static PeerInfo Stranger(string id) => new() { Id = id, Name = "Inconnu", Port = 1 };
+
+    [Fact]
+    public async Task Rings_FromOneAddressInALoop_AreShownAFewTimesOnly()
+    {
+        await using var atelier = await StartAsync("a", "Atelier");
+        int shown = 0;
+        atelier.RingReceived += (_, _) => Interlocked.Increment(ref shown);
+
+        for (int i = 0; i < 9; i++)
+        {
+            using var answer = await PostAsync(atelier, BellProtocol.RingPath, new Ring { Id = $"ring{i}", From = Stranger($"x{i}") });
+            Assert.True(answer.IsSuccessStatusCode);
+        }
+        Assert.Equal(5, shown);
+    }
+
+    [Fact]
+    public async Task AReply_ToARingNeverSent_IsIgnored()
+    {
+        await using var atelier = await StartAsync("a", "Atelier");
+        await using var caisse = await StartAsync("c", "Caisse", AddressOf(atelier));
+        int replies = 0;
+        caisse.ReplyReceived += (_, _) => Interlocked.Increment(ref replies);
+
+        // A ring sent to the Atelier, answered by another PC, and a reply to a ring that never was.
+        var outcome = await caisse.RingAsync(PeerOf(caisse, "a"), null);
+        using (await PostAsync(caisse, BellProtocol.ReplyPath, new Reply { RingId = outcome.RingId, From = Stranger("x"), Text = "J'arrive" })) { }
+        using (await PostAsync(caisse, BellProtocol.ReplyPath, new Reply { RingId = "never", From = new PeerInfo { Id = "a", Name = "Atelier", Port = atelier.Port }, Text = "J'arrive" })) { }
+        Assert.Equal(0, replies);
+    }
+
+    [Fact]
+    public void Discovery_OnAPortTaken_Throws_AndLeavesNoSocketBehind()
+    {
+        using var holder = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork,
+            System.Net.Sockets.SocketType.Dgram, System.Net.Sockets.ProtocolType.Udp) { ExclusiveAddressUse = true };
+        holder.Bind(new IPEndPoint(IPAddress.Any, 0));
+        int port = ((IPEndPoint)holder.LocalEndPoint!).Port;
+
+        using var discovery = new Network.Discovery(port, BellProtocol.MulticastGroup, (_, _) => { });
+        Assert.Throws<System.Net.Sockets.SocketException>(discovery.Start);
+    }
 }

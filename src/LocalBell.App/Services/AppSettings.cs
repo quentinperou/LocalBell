@@ -65,10 +65,14 @@ public sealed class AppSettings
     private static readonly JsonSerializerOptions Json = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new TolerantEnumConverter() },
     };
 
     private string filePath = "";
+
+    /// <summary>What went wrong reading the file, for the developer log (written before the log is set up).</summary>
+    [JsonIgnore]
+    public string? LoadIssue { get; private set; }
 
     /// <summary>This install, for the other PCs: made once, kept when the PC is renamed.</summary>
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -149,34 +153,101 @@ public sealed class AppSettings
         return string.IsNullOrEmpty(profile) ? root : Path.Combine(root, "profiles", profile);
     }
 
-    /// <summary>The settings of the profile, or new ones (a new id) when there are none or they cannot be read.</summary>
+    /// <summary>
+    /// The settings of the profile, or new ones when there are none. A file that cannot be read (damaged, or written by
+    /// a newer LocalBell) is kept aside as settings.json.bad, and its id saved from it when it can be found: a new id
+    /// would make this PC a stranger to the others (its favourite, its place in their lists).
+    /// </summary>
     public static AppSettings Load(string folder)
     {
         string path = Path.Combine(folder, "settings.json");
         AppSettings? settings = null;
+        string? issue = null, text = null;
         try
         {
-            if (File.Exists(path)) settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path), Json);
+            if (File.Exists(path))
+            {
+                text = File.ReadAllText(path);
+                settings = JsonSerializer.Deserialize<AppSettings>(text, Json);
+                if (settings is null) issue = "settings.json is empty";
+            }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            issue = $"settings.json could not be read ({ex.GetType().Name}: {ex.Message})";
+        }
+        if (settings is null && text is not null)
+        {
+            settings = new AppSettings();
+            var match = SavedId.Match(text);
+            if (match.Success) settings.Id = match.Groups[1].Value;
+            try { File.Move(path, path + ".bad", overwrite: true); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            issue += $"; kept as settings.json.bad, {(match.Success ? "its id saved" : "a new id")}";
+        }
         settings ??= new AppSettings();
         settings.filePath = path;
+        settings.LoadIssue = issue;
         if (string.IsNullOrWhiteSpace(settings.Id)) settings.Id = Guid.NewGuid().ToString("N");
         settings.Volume = Math.Clamp(settings.Volume, 0, 100);
         settings.Repeat = Math.Clamp(settings.Repeat, 1, 10);
+        // A file edited by hand may say null for a list.
+        settings.Messages ??= [];
+        settings.Replies ??= [];
+        settings.Addresses ??= [];
+        settings.KnownPcs ??= [];
         return settings;
     }
 
-    /// <summary>Writes the file whole or not at all (a temporary file beside it takes its place).</summary>
+    // The id in a file that does not parse as a whole (cut short by a power cut): the first "Id": "…" of 32 hex digits.
+    private static readonly System.Text.RegularExpressions.Regex SavedId = new("\"Id\"\\s*:\\s*\"([0-9a-fA-F]{32})\"");
+
+    /// <summary>
+    /// Writes the file whole or not at all: a temporary file beside it, on the disk before it takes the place of the
+    /// old one (a power cut right after the swap would otherwise leave an empty file).
+    /// </summary>
     public void Save()
     {
+        string temp = $"{filePath}.{Guid.NewGuid():N}.tmp";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-            string temp = $"{filePath}.{Guid.NewGuid():N}.tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(this, Json));
+            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write))
+            {
+                stream.Write(JsonSerializer.SerializeToUtf8Bytes(this, Json));
+                stream.Flush(flushToDisk: true);
+            }
             File.Move(temp, filePath, overwrite: true);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            DevLog.Write($"Settings not saved: {ex.Message}");
+            try { File.Delete(temp); }
+            catch (Exception again) when (again is IOException or UnauthorizedAccessException) { }
+        }
+    }
+
+    /// <summary>
+    /// Enums as their names; a name this version does not know (written by a newer one) reads as the default value
+    /// instead of failing the whole file.
+    /// </summary>
+    private sealed class TolerantEnumConverter : JsonConverterFactory
+    {
+        public override bool CanConvert(Type type) => type.IsEnum;
+
+        public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options) =>
+            (JsonConverter)Activator.CreateInstance(typeof(Converter<>).MakeGenericType(type))!;
+
+        private sealed class Converter<T> : JsonConverter<T> where T : struct, Enum
+        {
+            public override T Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options) => reader.TokenType switch
+            {
+                JsonTokenType.String when Enum.TryParse<T>(reader.GetString(), ignoreCase: true, out var value) && Enum.IsDefined(value) => value,
+                JsonTokenType.Number when reader.TryGetInt32(out int number) && Enum.IsDefined(typeof(T), number) => (T)Enum.ToObject(typeof(T), number),
+                _ => default,
+            };
+
+            public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString());
+        }
     }
 }

@@ -169,7 +169,8 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsSearching));
         OnPropertyChanged(nameof(Favorite));
 
-        settings.KnownPcs = peers.Select(p => new KnownPc
+        // Only the PCs that answered once (or were known before): a name in one datagram is not kept for the next run.
+        settings.KnownPcs = peers.Where(p => p.Verified).Select(p => new KnownPc
         {
             Id = p.Id, Name = p.Name, Address = p.EndPoint.Address.ToString(), Port = p.EndPoint.Port,
         }).ToList();

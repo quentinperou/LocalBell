@@ -639,6 +639,9 @@
               <StackPanel VerticalAlignment="Center">
                 <TextBlock x:Name="FoundText" />
                 <TextBlock Style="{StaticResource CardDescription}" Text="{local:Tr FoundHint}" />
+                <!-- The UDP port of the announcements was taken (another program, Hyper-V, WSL, Docker). -->
+                <TextBlock x:Name="UdpNote" Style="{StaticResource CardDescription}" Visibility="Collapsed"
+                           Foreground="{DynamicResource SystemFillColorCautionBrush}" />
               </StackPanel>
             </DockPanel>
           </Border>

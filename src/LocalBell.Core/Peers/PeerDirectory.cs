@@ -8,6 +8,12 @@ public sealed record Peer(string Id, string Name, PeerStatus Status, IPEndPoint 
 {
     /// <summary>The other addresses it was heard at, most recent first (a PC on two networks): tried in turn.</summary>
     public IReadOnlyList<IPEndPoint> EndPoints { get; init; } = [EndPoint];
+
+    /// <summary>
+    /// It answered a request of this PC (a hello, its list of PCs), or was known from an earlier run: a real LocalBell,
+    /// not a name in one datagram. Only those are kept for the next run.
+    /// </summary>
+    public bool Verified { get; init; }
 }
 
 /// <summary>What changed when a PC was heard from.</summary>
@@ -25,10 +31,13 @@ public enum SeenChange
 
 /// <summary>
 /// The PCs known to this one, by id: online while they are heard from, offline after a silence or when they leave.
-/// Offline PCs stay in the list (greyed, at the bottom). Safe to use from several threads.
+/// Offline PCs stay in the list (greyed, at the bottom). At most <paramref name="capacity"/> of them: a host that sends
+/// datagrams with ever new ids would otherwise fill it (the oldest offline one makes room, the unverified first; with
+/// none offline, a newcomer waits). Safe to use from several threads.
 /// </summary>
-public sealed class PeerDirectory(TimeProvider time)
+public sealed class PeerDirectory(TimeProvider time, int capacity = PeerDirectory.DefaultCapacity)
 {
+    public const int DefaultCapacity = 250;
     private const int MaxEndPoints = 3;
 
     private sealed class Entry
@@ -36,9 +45,19 @@ public sealed class PeerDirectory(TimeProvider time)
         public required PeerInfo Info;
         public required List<IPEndPoint> EndPoints;
         public bool Online;
+        public bool Verified;
         public DateTimeOffset LastSeen;
 
-        public Peer ToPeer() => new(Info.Id, Info.Name, Info.Status, EndPoints[0], Online, Info.Version) { EndPoints = EndPoints.ToArray() };
+        public Peer ToPeer() => new(Info.Id, Info.Name, Info.Status, EndPoints[0], Online, Info.Version)
+            { EndPoints = EndPoints.ToArray(), Verified = Verified };
+    }
+
+    // Room for one more: the oldest offline entry goes, an unverified one first. False when all are online.
+    private bool MakeRoom()
+    {
+        if (entries.Count < capacity) return true;
+        var oldest = entries.Values.Where(e => !e.Online).OrderBy(e => e.Verified).ThenBy(e => e.LastSeen).FirstOrDefault();
+        return oldest is not null && entries.Remove(oldest.Info.Id);
     }
 
     private readonly Lock gate = new();
@@ -53,6 +72,7 @@ public sealed class PeerDirectory(TimeProvider time)
             var now = time.GetUtcNow();
             if (!entries.TryGetValue(info.Id, out var entry))
             {
+                if (!MakeRoom()) return SeenChange.None;
                 entries[info.Id] = new Entry { Info = info, EndPoints = [endPoint], Online = true, LastSeen = now };
                 return SeenChange.Appeared;
             }
@@ -74,7 +94,15 @@ public sealed class PeerDirectory(TimeProvider time)
     public bool Remember(PeerInfo info, IPEndPoint endPoint)
     {
         lock (gate)
-            return entries.TryAdd(info.Id, new Entry { Info = info, EndPoints = [endPoint], Online = false, LastSeen = DateTimeOffset.MinValue });
+            return !entries.ContainsKey(info.Id) && MakeRoom() && entries.TryAdd(info.Id,
+                new Entry { Info = info, EndPoints = [endPoint], Online = false, Verified = true, LastSeen = DateTimeOffset.MinValue });
+    }
+
+    /// <summary>The PC answered a request of this one: a real LocalBell, kept for the next run.</summary>
+    public void Confirm(string id)
+    {
+        lock (gate)
+            if (entries.TryGetValue(id, out var entry)) entry.Verified = true;
     }
 
     /// <summary>A PC that said it leaves. True when it was online.</summary>

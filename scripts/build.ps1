@@ -41,8 +41,9 @@ Write-Host "LocalBell $version" -ForegroundColor Green
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { throw 'Tool not found: dotnet. See the prerequisites in the README.' }
 
-# Start from an empty dist folder (build output only).
-if ([IO.Directory]::Exists($dist)) { [IO.Directory]::Delete($dist, $true) }
+# Start from an empty dist\app and no installer; dist\store (build-store.ps1's Store package) stays.
+if ([IO.Directory]::Exists($appDir)) { [IO.Directory]::Delete($appDir, $true) }
+Get-ChildItem $dist -Filter 'LocalBell-Setup-*.exe' -ErrorAction SilentlyContinue | Remove-Item
 New-Item -ItemType Directory -Force $appDir | Out-Null
 
 if (-not $SkipTests) {

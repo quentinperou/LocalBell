@@ -14,7 +14,6 @@ public sealed class Discovery : IDisposable
     private readonly int port;
     private readonly IPAddress group;
     private readonly Action<Announcement, IPAddress> received;
-    private readonly HashSet<IPAddress> joined = [];
     private readonly CancellationTokenSource stop = new();
     private Socket? socket;
 
@@ -27,25 +26,37 @@ public sealed class Discovery : IDisposable
 
     /// <summary>
     /// Listens on the port, shared with other programs (ReuseAddress: a second LocalBell on the same PC, for a test,
-    /// gets the multicast announcements too), and joins the group on every card.
+    /// gets the multicast announcements too), and joins the group on every card. Throws a <see cref="SocketException"/>
+    /// when the port cannot be had (held by another program, or in a range Windows reserves for Hyper-V, WSL or Docker);
+    /// <see cref="Send"/> works all the same.
     /// </summary>
     public void Start()
     {
-        socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) { ExclusiveAddressUse = false };
-        socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-        socket.Bind(new IPEndPoint(IPAddress.Any, port));
+        var udp = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) { ExclusiveAddressUse = false };
+        try
+        {
+            udp.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            udp.Bind(new IPEndPoint(IPAddress.Any, port));
+        }
+        catch
+        {
+            udp.Dispose();
+            throw;
+        }
+        socket = udp;
         JoinGroup();
-        _ = ReceiveAsync(socket, stop.Token);
+        _ = ReceiveAsync(udp, stop.Token);
     }
 
-    /// <summary>Joins the group on the cards that came up since (a cable plugged in, Wi-Fi back).</summary>
+    /// <summary>
+    /// Joins the group on every card, again on those already joined: after Wi-Fi drops and comes back with the same
+    /// address, Windows may have dropped the membership.
+    /// </summary>
     public void JoinGroup()
     {
         if (socket is null) return;
         foreach (var local in LocalNetwork.Addresses())
         {
-            lock (joined)
-                if (!joined.Add(local.Address)) continue;
             try
             {
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(group, local.Address));

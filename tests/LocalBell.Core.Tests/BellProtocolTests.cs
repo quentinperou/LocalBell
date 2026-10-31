@@ -21,6 +21,14 @@ public class BellProtocolTests
         Assert.Equal("ab", BellProtocol.Clean(text, 3));
     }
 
+    [Theory]
+    [InlineData("Ca\u200Bisse", "Caisse")]            // zero-width space
+    [InlineData("\u202Eessiac", "essiac")]           // right-to-left override: shown reversed
+    [InlineData("\u200B\u200D", "")]                 // invisible only: no name
+    [InlineData("Client   en\u2028caisse", "Client en caisse")]
+    public void Clean_DropsInvisibleCharactersAndRunsOfSpaces(string text, string expected) =>
+        Assert.Equal(expected, BellProtocol.Clean(text, 40));
+
     [Fact]
     public void Checked_RefusesAPeerWithoutIdOrPort()
     {
@@ -29,6 +37,15 @@ public class BellProtocolTests
         Assert.Null(new PeerInfo { Id = new string('x', 65), Name = "A", Port = 1 }.Checked());
         Assert.Null(new PeerInfo { Id = "x", Name = "A", Port = 1, Status = (PeerStatus)7 }.Checked());
     }
+
+    [Theory]
+    [InlineData("8f4e2b1c9d0a4e7f8b2c3d4e5f6a7b8c", true)]
+    [InlineData("test-a", true)]
+    [InlineData("a\r\nForged log line", false)]
+    [InlineData("a b", false)]
+    [InlineData("é", false)]
+    public void IsId_TakesLettersDigitsAndDashesOnly(string id, bool expected) =>
+        Assert.Equal(expected, BellProtocol.IsId(id));
 
     [Fact]
     public void Checked_CleansTheNameAndNamesAPeerWithoutOne()

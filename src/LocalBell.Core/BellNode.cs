@@ -92,6 +92,13 @@ public sealed class BellNode : IAsyncDisposable
     private const int ScanParallelism = 64;
     private const int MaxReplyLength = 60;
 
+    // The PCs another PC lists (GET /peers): at most so many asked, so many at a time.
+    private const int MaxPeersAsked = 64;
+    private const int PeersParallelism = 8;
+
+    // The answers of other PCs are a few hundred bytes of JSON; nothing bigger is read.
+    private const int MaxAnswerBytes = 64 * 1024;
+
     private readonly NodeOptions options;
     private readonly PeerDirectory directory;
     private readonly MiniHttpServer server;
@@ -99,6 +106,8 @@ public sealed class BellNode : IAsyncDisposable
     private readonly HttpClient http;
     private readonly HttpClient scanHttp;
     private readonly RecentIds rings = new(256);
+    private readonly RingsSent sent = new(256);
+    private readonly RingThrottle throttle;
     private readonly CancellationTokenSource stop = new();
     private readonly Lock gate = new();
     private List<string> addresses;
@@ -113,15 +122,18 @@ public sealed class BellNode : IAsyncDisposable
         status = options.Status;
         addresses = [.. options.Addresses];
         directory = new PeerDirectory(options.Time);
+        throttle = new RingThrottle(options.Time);
         foreach (var (info, endPoint) in options.KnownPeers)
-            if (info.Checked() is { } known && known.Id != options.Id) directory.Remember(known, endPoint);
+            if (info.Checked() is { } known && known.Id != options.Id && endPoint.AddressFamily == AddressFamily.InterNetwork)
+                directory.Remember(known, endPoint);
         server = new MiniHttpServer(options.BindAddress, options.ServerPort, HandleAsync);
         if (options.Discovery) discovery = new Discovery(options.DiscoveryPort, BellProtocol.MulticastGroup, OnAnnouncement);
-        // No proxy: an office proxy would get requests meant for the PC next door.
-        http = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(1.5), UseProxy = false })
-            { Timeout = TimeSpan.FromSeconds(4) };
-        scanHttp = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromMilliseconds(500), UseProxy = false })
-            { Timeout = TimeSpan.FromSeconds(1.5) };
+        // No proxy: an office proxy would get requests meant for the PC next door. No redirect: a host that answers
+        // "go there" would send this PC anywhere, the Internet included.
+        http = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(1.5), UseProxy = false, AllowAutoRedirect = false })
+            { Timeout = TimeSpan.FromSeconds(4), MaxResponseContentBufferSize = MaxAnswerBytes };
+        scanHttp = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromMilliseconds(500), UseProxy = false, AllowAutoRedirect = false })
+            { Timeout = TimeSpan.FromSeconds(1.5), MaxResponseContentBufferSize = MaxAnswerBytes };
     }
 
     /// <summary>This PC as the others see it.</summary>
@@ -133,6 +145,13 @@ public sealed class BellNode : IAsyncDisposable
 
     /// <summary>The port of the server, once started.</summary>
     public int Port => server.Port;
+
+    /// <summary>
+    /// False when the UDP port of the announcements could not be had (another program, or a range Windows reserves for
+    /// Hyper-V, WSL or Docker): this PC still announces itself and is found, but finds the others only by the scan,
+    /// the addresses added by hand and their answers.
+    /// </summary>
+    public bool HearsAnnouncements { get; private set; }
 
     /// <summary>The PCs known, online first, then by name.</summary>
     public IReadOnlyList<Peer> Peers => directory.All();
@@ -156,13 +175,23 @@ public sealed class BellNode : IAsyncDisposable
         Log($"Server on TCP {server.Port} ({options.BindAddress}); id {Short(options.Id)}, name \"{name}\"");
         if (discovery is not null)
         {
-            discovery.Start();
+            try
+            {
+                discovery.Start();
+                HearsAnnouncements = true;
+                Log($"Discovery on UDP {options.DiscoveryPort}, group {BellProtocol.MulticastGroup}; cards: {Cards()}");
+            }
+            catch (SocketException ex)
+            {
+                // The app goes on without hearing them: the others still hear this PC and answer its server.
+                Log($"UDP {options.DiscoveryPort} unavailable ({ex.SocketErrorCode}): the announcements of the others are not heard; "
+                    + $"the scan and the addresses added by hand find them. Cards: {Cards()}");
+            }
             NetworkChange.NetworkAddressChanged += OnNetworkChanged;
-            Log($"Discovery on UDP {options.DiscoveryPort}, group {BellProtocol.MulticastGroup}; cards: {Cards()}");
             discovery.Send(MakeAnnouncement(announce: true));
         }
-        await AskAsync(directory.All(), stop.Token);
-        await AskAddressesAsync(stop.Token);
+        // The PCs known and the addresses added by hand, all at once: five PCs off no longer hold the start 20 s.
+        await Safely("First hellos", () => Task.WhenAll(AskAsync(directory.All(), stop.Token), AskAddressesAsync(stop.Token)));
         loop = RunAsync(stop.Token);
     }
 
@@ -173,6 +202,10 @@ public sealed class BellNode : IAsyncDisposable
     private static string Cards() => string.Join(", ", LocalNetwork.Addresses()
         .Select(a => $"{a.CardName} {a.Address}/{a.PrefixLength}{(a.HasGateway ? " (gateway)" : "")}")) is { Length: > 0 } list ? list : "none";
 
+    /// <summary>
+    /// The life of the node: a scan if nobody answered, then the heartbeat. An error in one step is logged and the next
+    /// one runs: an exception here used to end the heartbeat for the rest of the session, silently.
+    /// </summary>
     private async Task RunAsync(CancellationToken token)
     {
         try
@@ -180,23 +213,36 @@ public sealed class BellNode : IAsyncDisposable
             if (discovery is not null && options.Scan)
             {
                 await Task.Delay(ScanAfter, options.Time, token);
-                if (!directory.All().Any(p => p.Online)) await ScanAsync(token);
+                if (!directory.All().Any(p => p.Online)) await Safely("Scan", () => ScanAsync(token));
             }
             using var timer = new PeriodicTimer(Heartbeat, options.Time);
             while (await timer.WaitForNextTickAsync(token))
-            {
-                discovery?.Send(MakeAnnouncement(announce: false));
-                await AskAsync(directory.Quiet(AskAfter), token);
-                await AskAddressesAsync(token);
-                var before = directory.All().Where(p => p.Online).Select(p => p.Id).ToHashSet();
-                if (directory.Expire(OfflineAfter))
-                {
-                    Log("Offline after a silence: " + string.Join(", ", directory.All().Where(p => !p.Online && before.Contains(p.Id)).Select(p => p.Name)));
-                    RaisePeersChanged();
-                }
-            }
+                await Safely("Heartbeat", () => BeatAsync(token));
         }
         catch (OperationCanceledException) { }
+    }
+
+    private async Task BeatAsync(CancellationToken token)
+    {
+        discovery?.Send(MakeAnnouncement(announce: false));
+        await AskAsync(directory.Quiet(AskAfter), token);
+        await AskAddressesAsync(token);
+        var before = directory.All().Where(p => p.Online).Select(p => p.Id).ToHashSet();
+        if (directory.Expire(OfflineAfter))
+        {
+            Log("Offline after a silence: " + string.Join(", ", directory.All().Where(p => !p.Online && before.Contains(p.Id)).Select(p => p.Name)));
+            RaisePeersChanged();
+        }
+    }
+
+    // A step of the loop: its error logged, never the end of the loop (cancellation still ends it).
+    private async Task Safely(string what, Func<Task> step)
+    {
+        try { await step(); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Log($"{what}: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     // ---- Ringing and answering ----
@@ -208,6 +254,7 @@ public sealed class BellNode : IAsyncDisposable
         string ringId = Guid.NewGuid().ToString("N");
         string text = BellProtocol.Clean(message, BellProtocol.MaxMessageLength);
         var ring = new Ring { Id = ringId, From = Self, Message = text.Length > 0 ? text : null, Everyone = everyone };
+        sent.Add(ringId, current.Id); // its replies are taken from that PC only
         foreach (var endPoint in current.EndPoints)
         {
             var answer = await PostAsync<RingAnswer>(http, endPoint, BellProtocol.RingPath, ring, token);
@@ -311,17 +358,25 @@ public sealed class BellNode : IAsyncDisposable
 
     private void OnAnnouncement(Announcement announcement, IPAddress address)
     {
-        var info = announcement.Peer?.Checked();
-        if (info is null || info.Id == options.Id) return;
-        if (announcement.Leaving)
+        // On the receiving thread of the discovery: an exception here would end it for the session.
+        try
         {
-            Log($"UDP from {address}: {info.Name} leaves");
-            if (directory.Left(info.Id)) RaisePeersChanged();
-            return;
+            var info = announcement.Peer?.Checked();
+            if (info is null || info.Id == options.Id) return;
+            if (announcement.Leaving)
+            {
+                Log($"UDP from {address}: {info.Name} leaves");
+                if (directory.Left(info.Id)) RaisePeersChanged();
+                return;
+            }
+            if (announcement.Announce) Log($"UDP from {address}: {info.Name} starts (or looks again), answered");
+            Heard(info, address);
+            if (announcement.Announce) _ = AnswerAsync(info, address);
         }
-        if (announcement.Announce) Log($"UDP from {address}: {info.Name} starts (or looks again), answered");
-        Heard(info, address);
-        if (announcement.Announce) _ = AnswerAsync(info, address);
+        catch (Exception ex)
+        {
+            Log($"Announcement from {address}: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     /// <summary>A PC that starts wants to know the others: a hello to its server, else an answer by UDP.</summary>
@@ -351,22 +406,38 @@ public sealed class BellNode : IAsyncDisposable
         Log($"{info.Name} ({Short(info.Id)}, {info.Version}) at {address}:{info.Port}: "
             + (change == SeenChange.Appeared ? "online" : $"now {info.Status}"));
         RaisePeersChanged();
-        if (change == SeenChange.Appeared) _ = AskTheirPeersAsync(new IPEndPoint(address, info.Port));
+        if (change == SeenChange.Appeared) _ = AskTheirPeersAsync(info.Id, new IPEndPoint(address, info.Port));
     }
 
-    private async Task AskTheirPeersAsync(IPEndPoint endPoint)
+    /// <summary>
+    /// The PCs a PC newly found knows, each asked once: only addresses of a local network, at most
+    /// <see cref="MaxPeersAsked"/>, a few at a time. A host that lists thousands of Internet addresses would otherwise
+    /// send this PC knocking on each. A PC that answers is a real LocalBell: confirmed.
+    /// </summary>
+    private async Task AskTheirPeersAsync(string id, IPEndPoint endPoint)
     {
         try
         {
             var list = await GetAsync<PeerAddress[]>(http, endPoint, BellProtocol.PeersPath, stop.Token);
             if (list is null) return;
+            directory.Confirm(id);
+            var locals = LocalNetwork.Addresses();
             var unknown = list
                 .Select(p => (Info: p.Peer?.Checked(), Ok: IPAddress.TryParse(p.Address, out var a), Address: a))
-                .Where(p => p.Info is not null && p.Ok && p.Info.Id != options.Id && directory.Find(p.Info.Id) is not { Online: true })
-                .Select(p => new IPEndPoint(p.Address!, p.Info!.Port));
-            await Task.WhenAll(unknown.Select(e => HelloAsync(http, e, stop.Token)));
+                .Where(p => p.Info is not null && p.Ok && p.Info.Id != options.Id && directory.Find(p.Info.Id) is not { Online: true }
+                    && LocalNetwork.IsLan(p.Address!, endPoint.Address, locals))
+                .Select(p => new IPEndPoint(p.Address!, p.Info!.Port))
+                .Distinct()
+                .Take(MaxPeersAsked)
+                .ToList();
+            await Parallel.ForEachAsync(unknown, new ParallelOptions { MaxDegreeOfParallelism = PeersParallelism, CancellationToken = stop.Token },
+                async (e, t) => await HelloAsync(http, e, t));
         }
         catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            Log($"PCs known by {endPoint}: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     /// <summary>A hello to each PC (each of its addresses until one answers), all at once.</summary>
@@ -377,22 +448,22 @@ public sealed class BellNode : IAsyncDisposable
                 if (await HelloAsync(http, endPoint, token) is not null) return;
         }));
 
-    /// <summary>A hello to the addresses added by hand, unless a PC online already answers there.</summary>
-    private async Task AskAddressesAsync(CancellationToken token)
+    /// <summary>A hello to the addresses added by hand, all at once, unless a PC online already answers there.</summary>
+    private Task AskAddressesAsync(CancellationToken token)
     {
         List<string> list;
         lock (gate) list = addresses;
-        foreach (var address in list)
+        return Task.WhenAll(list.Select(async address =>
         {
             var endPoints = await ResolveAsync(address, token);
-            if (endPoints.Count == 0) Log($"Address added by hand \"{address}\": not found (name not resolved)");
+            if (endPoints.Count == 0) Log($"Address added by hand \"{address}\": not found (name not resolved, or not IPv4)");
             foreach (var endPoint in endPoints)
             {
                 if (directory.IsOnlineAt(endPoint)) break;
                 if (await HelloAsync(http, endPoint, token) is not null) break;
                 Log($"Address added by hand \"{address}\": {endPoint} does not answer");
             }
-        }
+        }));
     }
 
     /// <summary>A hello to every address of the networks of this PC (at most a /24 per card), a few dozen at a time.</summary>
@@ -414,15 +485,21 @@ public sealed class BellNode : IAsyncDisposable
         Log($"Scan done: {found} computer(s) answered");
     }
 
-    /// <summary>"192.168.41.12", "192.168.41.12:53318", "PC-BUREAU" or "PC-BUREAU:53318", as typed in Settings.</summary>
+    /// <summary>
+    /// "192.168.41.12", "192.168.41.12:53318", "PC-BUREAU" or "PC-BUREAU:53318", as typed in Settings. IPv4 only, as
+    /// the rest of LocalBell: an IPv6 address is refused.
+    /// </summary>
     public static (string Host, int Port)? ParseAddress(string text, int defaultPort = BellProtocol.DefaultPort)
     {
         text = text.Trim();
-        if (text.Length == 0 || text.Contains(' ')) return null;
+        if (text.Length == 0 || text.Contains(' ') || text.Contains('[') || text.Count(c => c == ':') > 1) return null;
         int colon = text.LastIndexOf(':');
-        if (colon < 0) return (text, defaultPort);
-        if (colon == 0 || !int.TryParse(text[(colon + 1)..], out int port) || port is <= 0 or > 65535) return null;
-        return (text[..colon], port);
+        string host = colon < 0 ? text : text[..colon];
+        int port = defaultPort;
+        if (colon >= 0 && (colon == 0 || !int.TryParse(text[(colon + 1)..], out port) || port is <= 0 or > 65535)) return null;
+        // 253: the longest a DNS name can be.
+        if (host.Length > 253 || IPAddress.TryParse(host, out var ip) && ip.AddressFamily != AddressFamily.InterNetwork) return null;
+        return (host, port);
     }
 
     private static async Task<IReadOnlyList<IPEndPoint>> ResolveAsync(string text, CancellationToken token)
@@ -434,7 +511,7 @@ public sealed class BellNode : IAsyncDisposable
             var found = await Dns.GetHostAddressesAsync(parsed.Host, AddressFamily.InterNetwork, token);
             return found.Select(a => new IPEndPoint(a, parsed.Port)).ToList();
         }
-        catch (SocketException) { return []; }
+        catch (Exception ex) when (ex is SocketException or ArgumentException) { return []; }
     }
 
     // ---- The server ----
@@ -475,11 +552,12 @@ public sealed class BellNode : IAsyncDisposable
     private HttpResponseData OnRing(HttpRequestData request)
     {
         var ring = BellProtocol.Deserialize<Ring>(request.Body);
-        if (ring?.From?.Checked() is not { } from || ring.Id.Length is 0 or > BellProtocol.MaxIdLength || from.Id == options.Id)
+        if (ring?.From?.Checked() is not { } from || !BellProtocol.IsId(ring.Id) || from.Id == options.Id)
             return HttpResponseData.BadRequest;
         Heard(from, request.Remote);
         bool quiet = status == PeerStatus.DoNotDisturb;
         if (!rings.Add(ring.Id)) Log($"Ring {Short(ring.Id)} from {from.Name}: again (another address), shown once");
+        else if (!throttle.Allow(request.Remote)) Log($"Ring {Short(ring.Id)} from {from.Name} at {request.Remote}: too many rings from there, not shown");
         else if (directory.Find(from.Id) is { } peer)
         {
             Log($"Ring {Short(ring.Id)} from {from.Name} at {request.Remote}{(ring.Everyone ? " (everyone)" : "")}"
@@ -493,10 +571,16 @@ public sealed class BellNode : IAsyncDisposable
     private HttpResponseData OnReply(HttpRequestData request)
     {
         var reply = BellProtocol.Deserialize<Reply>(request.Body);
-        if (reply?.From?.Checked() is not { } from || reply.RingId.Length is 0 or > BellProtocol.MaxIdLength || from.Id == options.Id
+        if (reply?.From?.Checked() is not { } from || !BellProtocol.IsId(reply.RingId) || from.Id == options.Id
             || !Enum.IsDefined(reply.Kind))
             return HttpResponseData.BadRequest;
         Heard(from, request.Remote);
+        // Only a reply to a ring this PC sent, from the PC it rang.
+        if (!sent.Matches(reply.RingId, from.Id))
+        {
+            Log($"Reply from {from.Name} to ring {Short(reply.RingId)}: not a ring sent to it, ignored");
+            return HttpResponseData.Ok(BellProtocol.Serialize(new RingAnswer()));
+        }
         Log($"Reply from {from.Name} to ring {Short(reply.RingId)}: {reply.Kind}");
         if (directory.Find(from.Id) is { } peer)
             ReplyReceived?.Invoke(this, new IncomingReply(reply.RingId, peer, reply.Kind, BellProtocol.Clean(reply.Text, MaxReplyLength)));
@@ -511,6 +595,7 @@ public sealed class BellNode : IAsyncDisposable
         var answer = await PostAsync<PeerInfo>(client, endPoint, BellProtocol.HelloPath, new Hello { Peer = Self }, token);
         if (answer?.Checked() is not { } info || info.Id == options.Id) return null;
         Heard(info, endPoint.Address);
+        directory.Confirm(info.Id); // it answered at that address: a real LocalBell
         return info;
     }
 
@@ -536,7 +621,9 @@ public sealed class BellNode : IAsyncDisposable
             if (!response.IsSuccessStatusCode) return null;
             return BellProtocol.Deserialize<T>(await response.Content.ReadAsByteArrayAsync(token));
         }
-        catch (Exception ex) when (!token.IsCancellationRequested && ex is HttpRequestException or TaskCanceledException or IOException)
+        // Unreachable, too slow, too big an answer (MaxAnswerBytes), or an address no URL can hold.
+        catch (Exception ex) when (!token.IsCancellationRequested
+            && ex is HttpRequestException or TaskCanceledException or IOException or UriFormatException or InvalidOperationException)
         {
             return null;
         }
@@ -573,6 +660,60 @@ public sealed class BellNode : IAsyncDisposable
         http.Dispose();
         scanHttp.Dispose();
         stop.Dispose();
+    }
+
+    /// <summary>The last rings sent, with the PC each one went to: a reply is taken only from that PC.</summary>
+    private sealed class RingsSent(int capacity)
+    {
+        private readonly Queue<string> order = new();
+        private readonly Dictionary<string, string> peers = [];
+
+        public void Add(string ringId, string peerId)
+        {
+            lock (peers)
+            {
+                peers[ringId] = peerId;
+                order.Enqueue(ringId);
+                if (order.Count > capacity) peers.Remove(order.Dequeue());
+            }
+        }
+
+        public bool Matches(string ringId, string peerId)
+        {
+            lock (peers)
+                return peers.TryGetValue(ringId, out string? rung) && rung == peerId;
+        }
+    }
+
+    /// <summary>
+    /// Rings shown per address: a burst of <see cref="Burst"/>, then one every <see cref="Every"/>. A host that rings in
+    /// a loop with ever new ids would otherwise bury the PC under popups and bells.
+    /// </summary>
+    private sealed class RingThrottle(TimeProvider time)
+    {
+        private const double Burst = 5;
+        private static readonly TimeSpan Every = TimeSpan.FromSeconds(2);
+        private readonly Dictionary<IPAddress, (double Tokens, DateTimeOffset At)> buckets = [];
+
+        public bool Allow(IPAddress address)
+        {
+            var now = time.GetUtcNow();
+            lock (buckets)
+            {
+                // Forgotten once full again: the table never grows past the hosts that rang lately.
+                foreach (var stale in buckets.Where(b => now - b.Value.At > Every * Burst).Select(b => b.Key).ToList())
+                    buckets.Remove(stale);
+                var (tokens, at) = buckets.TryGetValue(address, out var bucket) ? bucket : (Burst, now);
+                tokens = Math.Min(Burst, tokens + (now - at) / Every);
+                if (tokens < 1)
+                {
+                    buckets[address] = (tokens, now);
+                    return false;
+                }
+                buckets[address] = (tokens - 1, now);
+                return true;
+            }
+        }
     }
 
     /// <summary>The last ring ids received: a ring that arrives twice (two addresses) shows once.</summary>

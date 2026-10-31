@@ -19,12 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-## Third-party components
-
-| Component | License | Use |
-|-----------|---------|-----|
-| [PDFsharp](https://github.com/empira/PDFsharp) | MIT | Reading and writing PDF files |
-| Windows.Data.Pdf (part of Windows) | Windows license | Rendering the PDF preview on screen |

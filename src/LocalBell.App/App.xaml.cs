@@ -24,6 +24,7 @@ public partial class App : Application
     private SettingsWindow? settingsWindow;
     private TaskbarHost? taskbar;
     private WidgetFlyout? flyout;
+    private RingPopups? popups;
     private PeerItem? favorite; // the one the widget shows, watched for its name and its notes
     private bool withWidget = true;
     private string? profile;
@@ -80,6 +81,7 @@ public partial class App : Application
         DevLog.Enabled = Settings.DeveloperMode;
         DevLog.Write($"LocalBell {Version}{(AppPackage.IsPackaged ? " (Microsoft Store)" : "")} starts"
             + $"{(profile is null ? "" : $", profile {profile}")}, Windows {Environment.OSVersion.Version}, arguments: {string.Join(' ', e.Args)}");
+        if (Settings.LoadIssue is { } issue) DevLog.Write("Settings: " + issue);
 
         // UI language and theme: the ones chosen in Settings; LOCALBELL_LANG=en|fr and LOCALBELL_THEME=Light|Dark
         // force one, handy to test both.
@@ -124,7 +126,8 @@ public partial class App : Application
             return;
         }
 
-        viewModel = new MainViewModel(Settings, node, new RingPopups(Settings));
+        popups = new RingPopups(Settings);
+        viewModel = new MainViewModel(Settings, node, popups);
         tray = new TrayIcon(ShowMainWindow, TrayMenuItems);
         UpdateTrayTooltip();
         viewModel.DoNotDisturbChanged += (_, _) => UpdateTrayTooltip();
@@ -325,9 +328,22 @@ public partial class App : Application
         Shutdown();
     }
 
+    /// <summary>
+    /// Windows closes LocalBell (sign-out, shutdown, or the Restart Manager of an update, which closes the widget
+    /// process at the same time): the widget is let go first, so that the app does not start a new one that would
+    /// still hold LocalBell.exe while the installer replaces it.
+    /// </summary>
+    protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
+    {
+        taskbar?.Dispose();
+        taskbar = null;
+        base.OnSessionEnding(e);
+    }
+
     /// <summary>The others are told this PC leaves (shown offline at once); off the UI thread, which waits for it.</summary>
     protected override void OnExit(ExitEventArgs e)
     {
+        popups?.StopBell(); // the PC's sound as it was, if it was turned on for a ring
         tray?.Dispose();
         taskbar?.Dispose(); // its process ends with the pipe
         flyout?.Close();

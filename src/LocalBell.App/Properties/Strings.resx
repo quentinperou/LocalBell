@@ -178,6 +178,7 @@
   <data name="UpdatesByStore" xml:space="preserve"><value>Updates come from the Microsoft Store</value></data>
   <data name="UpdatesByStoreHint" xml:space="preserve"><value>Version {0} · the Store installs new versions by itself.</value></data>
   <data name="OpenStore" xml:space="preserve"><value>Open the Store</value></data>
+  <data name="UdpUnavailable" xml:space="preserve"><value>UDP port {0} is taken on this PC: the others are found by the scan and by their address.</value></data>
   <data name="ClassicRemovalText" xml:space="preserve"><value>LocalBell is also installed from GitHub on this PC, and only one can run at a time. Uninstall the GitHub version?
 
 LocalBell closes during the uninstall: start it again from the Start menu.</value></data>

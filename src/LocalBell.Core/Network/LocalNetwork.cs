@@ -62,6 +62,25 @@ public static class LocalNetwork
     public static IReadOnlyList<IPAddress> AddressesToShare() =>
         Addresses().OrderByDescending(a => a.HasGateway).Select(a => a.Address).Distinct().ToList();
 
+    /// <summary>
+    /// An address a PC of the local network can have, for the PCs another PC lists (GET /peers): a private IPv4 address
+    /// (10/8, 172.16/12, 192.168/16), one of the networks of this PC's cards, or the /24 of the PC that listed it. Never
+    /// an Internet address: a PC that lists thousands of them would otherwise send this one knocking on each.
+    /// </summary>
+    public static bool IsLan(IPAddress address, IPAddress listedBy, IReadOnlyList<LocalAddress> locals)
+    {
+        if (address.AddressFamily != AddressFamily.InterNetwork) return false;
+        byte[] b = address.GetAddressBytes();
+        if (b[0] == 10 || b[0] == 172 && b[1] is >= 16 and <= 31 || b[0] == 192 && b[1] == 168) return true;
+        uint value = ToUInt32(address);
+        if (listedBy.AddressFamily == AddressFamily.InterNetwork && (value & 0xFFFFFF00) == (ToUInt32(listedBy) & 0xFFFFFF00)) return true;
+        return locals.Any(local =>
+        {
+            uint mask = local.PrefixLength >= 32 ? uint.MaxValue : ~(uint.MaxValue >> local.PrefixLength);
+            return (value & mask) == (ToUInt32(local.Address) & mask);
+        });
+    }
+
     /// <summary>169.254.0.0/16: the address Windows gives a card that found no DHCP server.</summary>
     public static bool IsLinkLocal(IPAddress address) =>
         address.AddressFamily == AddressFamily.InterNetwork && address.GetAddressBytes() is [169, 254, ..];

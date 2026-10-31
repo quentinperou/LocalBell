@@ -25,6 +25,7 @@ public sealed class MiniHttpServer : IAsyncDisposable
 {
     private const int MaxHeaderBytes = 8 * 1024;
     private const int MaxBodyBytes = 64 * 1024;
+    private const int MaxConnections = 32;
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
     private static readonly byte[] HeaderEnd = "\r\n\r\n"u8.ToArray();
 
@@ -32,6 +33,9 @@ public sealed class MiniHttpServer : IAsyncDisposable
     private readonly int preferredPort;
     private readonly Func<HttpRequestData, CancellationToken, Task<HttpResponseData>> handler;
     private readonly CancellationTokenSource stop = new();
+    // At most MaxConnections served at a time: a host that opens thousands and stalls makes the others wait in the
+    // backlog, and the memory stays bounded (8 KB of headers and 64 KB of body each).
+    private readonly SemaphoreSlim slots = new(MaxConnections);
     private TcpListener? listener;
     private Task? acceptLoop;
 
@@ -62,6 +66,7 @@ public sealed class MiniHttpServer : IAsyncDisposable
             }
             catch (SocketException ex) when (ex.SocketErrorCode is SocketError.AddressAlreadyInUse or SocketError.AccessDenied)
             {
+                candidate.Stop(); // its socket was made when ExclusiveAddressUse was set
                 continue;
             }
             listener = candidate;
@@ -76,11 +81,16 @@ public sealed class MiniHttpServer : IAsyncDisposable
     {
         while (!token.IsCancellationRequested)
         {
+            try { await slots.WaitAsync(token); }
+            catch (OperationCanceledException) { return; }
             TcpClient client;
             try { client = await tcp.AcceptTcpClientAsync(token); }
-            catch (OperationCanceledException) { return; }
-            catch (ObjectDisposedException) { return; }
-            catch (SocketException) { continue; }
+            catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException or SocketException)
+            {
+                slots.Release();
+                if (ex is SocketException) continue;
+                return;
+            }
             _ = ServeAsync(client, token);
         }
     }
@@ -108,6 +118,10 @@ public sealed class MiniHttpServer : IAsyncDisposable
         catch (Exception ex) when (ex is IOException or SocketException or OperationCanceledException or ObjectDisposedException)
         {
             // The caller went away or was too slow: nothing to answer.
+        }
+        finally
+        {
+            slots.Release();
         }
     }
 

@@ -33,7 +33,8 @@ DisableProgramGroupPage=yes
 ; Admin rights: installs for every user of the PC (shop computers), lets the .NET runtime be installed, and opens
 ; the firewall to LocalBell (the other PCs must reach it).
 PrivilegesRequired=admin
-ArchitecturesAllowed=x64compatible
+; x64 Windows only: on Arm64 the x64 build needs the x64 .NET runtime, which the check below does not look for.
+ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.19041
 OutputDir=..\dist

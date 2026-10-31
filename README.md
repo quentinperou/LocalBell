@@ -148,7 +148,7 @@ files are committed: run it again only to change the design.
 ### Releasing a version
 
 1. Update `<Version>` in `Directory.Build.props`.
-2. Commit, then create and push a tag: `git tag v1.0.0`, then `git push origin v1.0.0`.
+2. Commit, then create a tag and push both: `git tag v1.0.0`, then `git push origin main v1.0.0`.
 3. The GitHub Actions workflow builds, tests and publishes the installer in a Release; the app finds it at its next
    start. A tag with a suffix (`v1.1.0-beta.1`) is a pre-release, offered to the Beta channel only.
 4. For the Store: `.\scripts\build-store.ps1`, then a new submission in Partner Center with the new `.msix`

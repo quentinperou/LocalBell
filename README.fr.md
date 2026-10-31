@@ -150,7 +150,7 @@ Les fichiers sont versionnés : ne le relancez que pour changer le dessin.
 ### Publier une version
 
 1. Mettez à jour `<Version>` dans `Directory.Build.props`.
-2. Commitez, puis créez et poussez un tag : `git tag v1.0.0`, puis `git push origin v1.0.0`.
+2. Commitez, puis créez un tag et poussez les deux : `git tag v1.0.0`, puis `git push origin main v1.0.0`.
 3. Le workflow GitHub Actions compile, teste et publie l'installeur dans une Release ; l'appli la trouve à son
    démarrage suivant. Un tag avec un suffixe (`v1.1.0-beta.1`) est une préversion, proposée au canal Bêta seulement.
 4. Pour le Store : `.\scripts\build-store.ps1`, puis une nouvelle soumission dans Partner Center avec le nouveau

@@ -37,6 +37,21 @@ public class LocalNetworkTests
     public void Broadcast_IsTheLastAddressOfTheNetwork(string address, int prefix, string expected) =>
         Assert.Equal(IPAddress.Parse(expected), new LocalAddress(IPAddress.Parse(address), prefix, "test").Broadcast);
 
+    [Theory]
+    [InlineData("10.4.5.6", true)]
+    [InlineData("172.20.1.2", true)]
+    [InlineData("192.168.200.3", true)]
+    [InlineData("100.70.1.2", true)]     // the network of this PC's card (100.70.0.0/16)
+    [InlineData("203.0.113.9", true)]    // the /24 of the PC that listed it
+    [InlineData("8.8.8.8", false)]       // the Internet
+    [InlineData("172.32.0.1", false)]
+    [InlineData("::1", false)]
+    public void IsLan_TakesTheAddressesOfALocalNetworkOnly(string address, bool expected)
+    {
+        LocalAddress[] cards = [new(IPAddress.Parse("100.70.4.4"), 16, "Ethernet")];
+        Assert.Equal(expected, LocalNetwork.IsLan(IPAddress.Parse(address), IPAddress.Parse("203.0.113.40"), cards));
+    }
+
     [Fact]
     public void IsLinkLocal_TellsTheAddressOfACardWithoutDhcp()
     {

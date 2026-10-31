@@ -9,6 +9,7 @@ using LocalBell.App.Services;
 using LocalBell.App.ViewModels;
 using LocalBell.Core;
 using LocalBell.Core.Network;
+using LocalBell.Core.Protocol;
 using LocalBell.Core.Updates;
 using Microsoft.Win32;
 
@@ -493,6 +494,8 @@ public partial class SettingsWindow : Window
     {
         int online = node.Peers.Count(p => p.Online);
         FoundText.Text = online == 0 ? Strings.Get("FoundNone") : Strings.Count("Found", online);
+        UdpNote.Text = Strings.Format("UdpUnavailable", BellProtocol.DefaultPort);
+        UdpNote.Visibility = node.HearsAnnouncements ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e)
