@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
+using Forms = System.Windows.Forms;
 
 namespace LocalBell.App.Services;
 
@@ -19,7 +20,7 @@ internal static class PopupMenu
 
     /// <summary>
     /// Opens a menu of <paramref name="items"/> at the pointer, or above the taskbar when <paramref name="aboveY"/> (its
-    /// top, in screen pixels) is given: never over it.
+    /// top, in screen pixels) is given (below it when it is on top): never over it.
     /// </summary>
     public static void Show(IEnumerable<object> items, int? aboveY = null)
     {
@@ -45,7 +46,10 @@ internal static class PopupMenu
             Height = 1,
             Title = "LocalBell Menu",
         };
-        host.SourceInitialized += (_, _) =>
+        // Above the taskbar, or below it when it is on top (Windows 11 26H2 lets it be).
+        var screen = Forms.Screen.FromPoint(Forms.Control.MousePosition);
+        bool below = aboveY is not null && screen.WorkingArea.Top > screen.Bounds.Top;
+        if (below) aboveY = screen.WorkingArea.Top;        host.SourceInitialized += (_, _) =>
         {
             NativeMethods.GetCursorPos(out var pointer);
             NativeMethods.SetWindowPos(new WindowInteropHelper(host).Handle, NativeMethods.HWND_TOPMOST,
@@ -59,7 +63,7 @@ internal static class PopupMenu
         foreach (var item in items) menu.Items.Add(item);
         Dress(menu);
         menu.PlacementTarget = host;
-        menu.Placement = aboveY is null ? PlacementMode.MousePoint : PlacementMode.Top;
+        menu.Placement = aboveY is null ? PlacementMode.MousePoint : below ? PlacementMode.Bottom : PlacementMode.Top;
         menu.HorizontalOffset = -ShadowRoom;
         menu.VerticalOffset = aboveY is null ? -ShadowRoom : 0;
         // Not the popup itself: activating it would deactivate the host, which closes the menu.

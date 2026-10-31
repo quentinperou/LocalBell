@@ -110,6 +110,25 @@ public class BellNodeTests
     }
 
     [Fact]
+    public async Task TwoPcs_WithOneId_TellEachOtherApart()
+    {
+        // Settings copied with a disk image: the same id on two PCs. The one whose name comes last takes a new one.
+        await using var atelier = await StartAsync("x", "Atelier");
+        var caisse = new BellNode(Options("x", "Caisse", AddressOf(atelier)));
+        string? newId = null;
+        caisse.IdChanged += (_, id) => newId = id;
+        await using (caisse)
+        {
+            await caisse.StartAsync();
+
+            await Eventually(() => newId is not null, "Caisse takes a new id");
+            Assert.Equal(newId, caisse.Self.Id);
+            Assert.Equal("x", atelier.Self.Id);
+            await Eventually(() => atelier.Peers.Any(p => p.Id == newId && p.Name == "Caisse" && p.Online), "Atelier lists Caisse");
+            Assert.True(PeerOf(caisse, "x") is { Name: "Atelier", Online: true });
+        }
+    }
+    [Fact]
     public async Task Rename_IsSeenByTheOthers()
     {
         await using var atelier = await StartAsync("a", "Atelier");

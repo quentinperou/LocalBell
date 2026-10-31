@@ -39,6 +39,10 @@ public sealed class RingPopups
     /// </summary>
     public void Show(IncomingRing ring, Action<string> reply, Action<ReplyKind> ended)
     {
+        // One popup per PC that rings: its new ring takes the place of the one before (ten rings were ten popups piled
+        // up; the audit, October 31). The PC that rang follows its newest ring only.
+        foreach (var older in open.Where(p => p.Ring.From.Id == ring.From.Id).ToList()) older.Close();
+
         var popup = new RingPopup(ring, settings.PopupStyle, settings.Replies.Take(3).ToList(), reply, ended);
         popup.Closed += (_, _) =>
         {
@@ -97,6 +101,15 @@ public sealed class RingPopups
         BellSound.Play(settings.Sound, settings.SoundFile, settings.Volume);
     }
 
+    /// <summary>
+    /// "Do not disturb" turned on while it rings: the bell stops, and the PCs that rang are told nobody answered (their
+    /// row must not say it rings); the popups stay, to answer them still.
+    /// </summary>
+    public void Silence()
+    {
+        foreach (var popup in open) popup.TellUnanswered();
+        StopBell();
+    }
     /// <summary>
     /// Every popup answered or closed, or the last ring over, or LocalBell quits (Quit, Windows shutting down, an
     /// update): silence, and the PC's sound as it was.

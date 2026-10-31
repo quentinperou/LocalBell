@@ -50,9 +50,13 @@ public partial class WidgetFlyout : Window
         int width = (int)Math.Round(ActualWidth * dpi.DpiScaleX) - 2 * shadow;
         int height = (int)Math.Round(ActualHeight * dpi.DpiScaleY);
         int left = leftFor(width);
-        var area = Forms.Screen.FromPoint(new System.Drawing.Point(left + width / 2, barTop - 1)).WorkingArea;
+        // The screen of the click (on the widget or the bell near the clock).
+        var screen = Forms.Screen.FromPoint(Forms.Control.MousePosition);
+        var area = screen.WorkingArea;
         left = Math.Clamp(left, area.Left + gap, Math.Max(area.Left + gap, area.Right - width - gap));
-        SetWindowPos(hwnd, HWND_TOPMOST, left - shadow, barTop - height + shadow - gap, 0, 0, SWP_NOSIZE);
+        // Above the taskbar, or below it when it is on top (Windows 11 26H2 lets it be; the audit, October 31).
+        int top = area.Top > screen.Bounds.Top ? area.Top + gap - shadow : barTop - height + shadow - gap;
+        SetWindowPos(hwnd, HWND_TOPMOST, left - shadow, top, 0, 0, SWP_NOSIZE);
         SetForegroundWindow(hwnd);
         Activate();
     }

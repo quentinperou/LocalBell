@@ -46,6 +46,22 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        try
+        {
+            await StartUpAsync(e);
+        }
+        catch (Exception ex)
+        {
+            // OnStartup is async void: a failure past its first await left LocalBell running with no window, holding the
+            // single-instance mutex (the audit, October 31). Said, logged, and the app ends.
+            DevLog.Write($"Error at startup: {ex}");
+            MessageBox.Show(Strings.Format("UnexpectedError", ex.Message), Strings.Get("AppTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+        }
+    }
+
+    private async Task StartUpAsync(StartupEventArgs e)
+    {
         if (e.Args is [TaskbarHost.Argument, var pipe])
         {
             TaskbarClient.Run(this, pipe);
@@ -114,6 +130,13 @@ public partial class App : Application
                 .Where(k => IPAddress.TryParse(k.Address, out _))
                 .Select(k => (new PeerInfo { Id = k.Id, Name = k.Name, Port = k.Port }, new IPEndPoint(IPAddress.Parse(k.Address), k.Port)))
                 .ToList(),
+        });
+        // Another PC had this id (settings copied with a disk image): the new one is kept. Before the start, which
+        // says hello to the PCs known.
+        node.IdChanged += (_, id) => Dispatcher.BeginInvoke(() =>
+        {
+            Settings.Id = id;
+            Settings.Save();
         });
         try
         {

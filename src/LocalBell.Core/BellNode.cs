@@ -111,6 +111,7 @@ public sealed class BellNode : IAsyncDisposable
     private readonly CancellationTokenSource stop = new();
     private readonly Lock gate = new();
     private List<string> addresses;
+    private volatile string id; // the one of the options, unless another PC turns out to have it too (IsThisPc)
     private string name;
     private PeerStatus status;
     private Task? loop;
@@ -118,13 +119,14 @@ public sealed class BellNode : IAsyncDisposable
     public BellNode(NodeOptions options)
     {
         this.options = options;
+        id = options.Id;
         name = CleanName(options.Name);
         status = options.Status;
         addresses = [.. options.Addresses];
         directory = new PeerDirectory(options.Time);
         throttle = new RingThrottle(options.Time);
         foreach (var (info, endPoint) in options.KnownPeers)
-            if (info.Checked() is { } known && known.Id != options.Id && endPoint.AddressFamily == AddressFamily.InterNetwork)
+            if (info.Checked() is { } known && known.Id != id && endPoint.AddressFamily == AddressFamily.InterNetwork)
                 directory.Remember(known, endPoint);
         server = new MiniHttpServer(options.BindAddress, options.ServerPort, HandleAsync);
         if (options.Discovery) discovery = new Discovery(options.DiscoveryPort, BellProtocol.MulticastGroup, OnAnnouncement);
@@ -137,7 +139,7 @@ public sealed class BellNode : IAsyncDisposable
     }
 
     /// <summary>This PC as the others see it.</summary>
-    public PeerInfo Self => new() { Id = options.Id, Name = name, Port = server.Port, Status = status, Version = options.Version };
+    public PeerInfo Self => new() { Id = id, Name = name, Port = server.Port, Status = status, Version = options.Version };
 
     public string Name => name;
 
@@ -162,6 +164,8 @@ public sealed class BellNode : IAsyncDisposable
     public event EventHandler<IncomingRing>? RingReceived;
 
     public event EventHandler<IncomingReply>? ReplyReceived;
+    /// <summary>This PC took a new id: another PC had the same (settings copied with a disk image). The app keeps it.</summary>
+    public event EventHandler<string>? IdChanged;
 
     /// <summary>
     /// Starts the server and the discovery, then asks the PCs known and the addresses added by hand. On the thread pool:
@@ -172,7 +176,7 @@ public sealed class BellNode : IAsyncDisposable
     private async Task StartCoreAsync()
     {
         server.Start();
-        Log($"Server on TCP {server.Port} ({options.BindAddress}); id {Short(options.Id)}, name \"{name}\"");
+        Log($"Server on TCP {server.Port} ({options.BindAddress}); id {Short(id)}, name \"{name}\"");
         if (discovery is not null)
         {
             try
@@ -362,7 +366,7 @@ public sealed class BellNode : IAsyncDisposable
         try
         {
             var info = announcement.Peer?.Checked();
-            if (info is null || info.Id == options.Id) return;
+            if (info is null || IsThisPc(info, address)) return;
             if (announcement.Leaving)
             {
                 Log($"UDP from {address}: {info.Name} leaves");
@@ -379,6 +383,25 @@ public sealed class BellNode : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// True for this PC's own id. Another PC may have it too: settings copied with a disk image (the audit, October 31),
+    /// and the two would ignore each other and show as one on the other screens. It is told apart by another name at
+    /// an address that is not this PC's (this PC's own announcements come back on its cards): the one whose name comes
+    /// last takes a new id (the app keeps it), tells the other, and the other is then a PC like any other.
+    /// </summary>
+    private bool IsThisPc(PeerInfo info, IPAddress from)
+    {
+        if (info.Id != id) return false;
+        if (info.Name == name || LocalNetwork.Addresses().Any(local => local.Address.Equals(from))) return true;
+        if (string.CompareOrdinal(name, info.Name) < 0) return true; // the other one takes a new id
+        string old = id;
+        id = Guid.NewGuid().ToString("N");
+        Log($"Id {Short(old)} is also the one of {info.Name} at {from} (settings copied with a disk image?): new id {Short(id)}");
+        IdChanged?.Invoke(this, id);
+        discovery?.Send(MakeAnnouncement(announce: true));
+        _ = AnswerAsync(info, from);
+        return false;
+    }
     /// <summary>A PC that starts wants to know the others: a hello to its server, else an answer by UDP.</summary>
     private async Task AnswerAsync(PeerInfo info, IPAddress address)
     {
@@ -424,7 +447,7 @@ public sealed class BellNode : IAsyncDisposable
             var locals = LocalNetwork.Addresses();
             var unknown = list
                 .Select(p => (Info: p.Peer?.Checked(), Ok: IPAddress.TryParse(p.Address, out var a), Address: a))
-                .Where(p => p.Info is not null && p.Ok && p.Info.Id != options.Id && directory.Find(p.Info.Id) is not { Online: true }
+                .Where(p => p.Info is not null && p.Ok && p.Info.Id != id && directory.Find(p.Info.Id) is not { Online: true }
                     && LocalNetwork.IsLan(p.Address!, endPoint.Address, locals))
                 .Select(p => new IPEndPoint(p.Address!, p.Info!.Port))
                 .Distinct()
@@ -537,7 +560,7 @@ public sealed class BellNode : IAsyncDisposable
     {
         var hello = BellProtocol.Deserialize<Hello>(request.Body);
         if (hello?.Peer?.Checked() is not { } info) return HttpResponseData.BadRequest;
-        if (info.Id != options.Id)
+        if (!IsThisPc(info, request.Remote))
         {
             if (!hello.Leaving) Heard(info, request.Remote);
             else
@@ -552,7 +575,7 @@ public sealed class BellNode : IAsyncDisposable
     private HttpResponseData OnRing(HttpRequestData request)
     {
         var ring = BellProtocol.Deserialize<Ring>(request.Body);
-        if (ring?.From?.Checked() is not { } from || !BellProtocol.IsId(ring.Id) || from.Id == options.Id)
+        if (ring?.From?.Checked() is not { } from || !BellProtocol.IsId(ring.Id) || from.Id == id)
             return HttpResponseData.BadRequest;
         Heard(from, request.Remote);
         bool quiet = status == PeerStatus.DoNotDisturb;
@@ -571,7 +594,7 @@ public sealed class BellNode : IAsyncDisposable
     private HttpResponseData OnReply(HttpRequestData request)
     {
         var reply = BellProtocol.Deserialize<Reply>(request.Body);
-        if (reply?.From?.Checked() is not { } from || !BellProtocol.IsId(reply.RingId) || from.Id == options.Id
+        if (reply?.From?.Checked() is not { } from || !BellProtocol.IsId(reply.RingId) || from.Id == id
             || !Enum.IsDefined(reply.Kind))
             return HttpResponseData.BadRequest;
         Heard(from, request.Remote);
@@ -593,7 +616,7 @@ public sealed class BellNode : IAsyncDisposable
     private async Task<PeerInfo?> HelloAsync(HttpClient client, IPEndPoint endPoint, CancellationToken token)
     {
         var answer = await PostAsync<PeerInfo>(client, endPoint, BellProtocol.HelloPath, new Hello { Peer = Self }, token);
-        if (answer?.Checked() is not { } info || info.Id == options.Id) return null;
+        if (answer?.Checked() is not { } info || IsThisPc(info, endPoint.Address)) return null;
         Heard(info, endPoint.Address);
         directory.Confirm(info.Id); // it answered at that address: a real LocalBell
         return info;

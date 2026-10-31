@@ -353,6 +353,7 @@ public sealed class MainViewModel : ObservableObject
         };
         settings.Save();
         node.SetStatus(PeerStatus.DoNotDisturb);
+        popups.Silence(); // turned on while it rings (the audit, October 31)
         RaiseDoNotDisturb();
     }
 

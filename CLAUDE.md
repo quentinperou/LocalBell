@@ -22,7 +22,7 @@ Version **0.1.1**, not released. **Git repository since October 31, 2026** (bran
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
 repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
-- Done: the network (`LocalBell.Core`, tested: 111 tests with the update feed), the icon, the app: the list window, the popup (discreet
+- Done: the network (`LocalBell.Core`, tested: 112 tests with the update feed), the icon, the app: the list window, the popup (discreet
   or loud), the ring sounds, the bell near the clock with its menu, "do not disturb" (moon button, banner, menu),
   favourites (star), single instance, **Settings on six pages** (as approved: name of the PC, start with Windows,
   do not disturb, language, theme; sound + own WAV/MP3 file, volume, ring when Windows is muted, repeat; popup style
@@ -67,7 +67,12 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
   a time), no HTTP redirects, answers ≤ 64 KB, 32 connections at a time on the server, directory capped at 250 and
   only verified PCs kept, rings throttled per address (5, then one every 2 s), replies taken only for rings sent to
   that PC, invisible characters dropped from names, ids `[0-9A-Za-z-]`, IPv4 only, loops that log instead of dying,
-  the hand-added addresses asked in parallel. Left for later: the list C of the audit.
+  the hand-added addresses asked in parallel. Then from its list C (October 31, end of the day, his "Oui, vas-y"):
+  "do not disturb" turned on while it rings silences the bell (the callers told nobody answered); one popup per PC
+  that rings (its new ring takes the place of the one before); two PCs with one id (settings copied with a disk
+  image) tell each other apart, the one whose name comes last takes a new id (`BellNode.IsThisPc`, `IdChanged`);
+  the quick panel and the widget's menu open below a taskbar on top; a failure at startup ends the app with a message
+  instead of leaving it running with no window. The rest of C is left for later.
 - **Installed on two PCs** (0.1.0, October 31: the shop PC and BUREAU3): they see each other, ring and reply.
 - **0.1.1** (October 31, after his first install): the ring repeated twice by default (was 3), a click on the bell near
   the clock opens the widget's quick panel (or the window, a setting), the music box (a fourth bell, for Halloween).
@@ -206,7 +211,7 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     change applied and saved at once; a language change builds the windows again (texts are read when a window is
     built).
   - `Properties/Strings.resx` + `Strings.fr.resx`, `{local:Tr Key}` in XAML, `Strings.Get/Format/Count` in code.
-- `tests/LocalBell.Core.Tests` (xUnit, 111 tests): the protocol, the addresses, the directory, the server, `BellNode`
+- `tests/LocalBell.Core.Tests` (xUnit, 112 tests): the protocol, the addresses, the directory, the server, `BellNode`
   end to end (several nodes on 127.0.0.1, without UDP: nothing leaves the PC), the update feed, and the parity of the
   two languages.
 
