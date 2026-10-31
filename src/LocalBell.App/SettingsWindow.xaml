@@ -269,6 +269,12 @@
           <TextBlock Text="{local:Tr PageNetwork}" VerticalAlignment="Center" />
         </StackPanel>
       </ListBoxItem>
+      <ListBoxItem AutomationProperties.Name="{local:Tr PageUpdates}">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Style="{StaticResource MenuIcon}" Text="&#xE895;" />
+          <TextBlock Text="{local:Tr PageUpdates}" VerticalAlignment="Center" />
+        </StackPanel>
+      </ListBoxItem>
       <ListBoxItem AutomationProperties.Name="{local:Tr PageAbout}">
         <StackPanel Orientation="Horizontal">
           <TextBlock Style="{StaticResource MenuIcon}" Text="&#xE946;" />
@@ -307,7 +313,13 @@
               <TextBlock DockPanel.Dock="Left" Style="{StaticResource CardIcon}" Text="&#xE7E8;" />
               <CheckBox x:Name="StartupBox" Style="{StaticResource ToggleSwitch}" DockPanel.Dock="Right" VerticalAlignment="Center"
                         Margin="16,0,0,0" Click="StartupBox_Click" AutomationProperties.Name="{local:Tr StartWithWindows}" />
-              <TextBlock Text="{local:Tr StartWithWindows}" VerticalAlignment="Center" />
+              <!-- The Store version, once the user turned its startup task off in Windows: only Windows turns it on again. -->
+              <Button x:Name="StartupAppsButton" DockPanel.Dock="Right" Content="{local:Tr OpenStartupSettings}" VerticalAlignment="Center"
+                      Margin="16,0,0,0" Visibility="Collapsed" Click="StartupApps_Click" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{local:Tr StartWithWindows}" />
+                <TextBlock x:Name="StartupNote" Style="{StaticResource CardDescription}" Visibility="Collapsed" />
+              </StackPanel>
             </DockPanel>
           </Border>
           <Border Style="{StaticResource SettingCard}">
@@ -627,6 +639,61 @@
               <StackPanel VerticalAlignment="Center">
                 <TextBlock x:Name="FoundText" />
                 <TextBlock Style="{StaticResource CardDescription}" Text="{local:Tr FoundHint}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Updates, as PageCompose's page: the version and what the last check found, the check / install button, then
+           the startup check and the channel. The Store version: the Store updates it. -->
+      <ScrollViewer x:Name="UpdatesPage" Grid.Row="1" Style="{StaticResource Page}">
+        <StackPanel Style="{StaticResource PageContent}">
+          <Border x:Name="GitHubUpdatesCard" Style="{StaticResource SettingCard}" Padding="0">
+            <StackPanel>
+              <DockPanel Margin="16,12">
+                <TextBlock DockPanel.Dock="Left" Style="{StaticResource CardIcon}" Text="&#xE895;" />
+                <Button x:Name="UpdateButton" DockPanel.Dock="Right" MinWidth="230" VerticalAlignment="Center"
+                        Margin="16,0,0,0" Click="UpdateButton_Click" />
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock x:Name="InstalledVersionText" />
+                  <TextBlock x:Name="UpdateStatusText" Style="{StaticResource CardDescription}" />
+                  <TextBlock x:Name="UpdateNotesLink" Style="{StaticResource CardDescription}" Visibility="Collapsed">
+                    <Hyperlink Click="UpdateNotes_Click"><Run Text="{local:Tr UpdateWhatsNew}" /></Hyperlink>
+                  </TextBlock>
+                  <ProgressBar x:Name="UpdateProgress" Maximum="1" Margin="0,8,0,2" Visibility="Collapsed" />
+                </StackPanel>
+              </DockPanel>
+              <Rectangle Style="{StaticResource CardDivider}" />
+              <DockPanel Style="{StaticResource CardSubRow}">
+                <CheckBox x:Name="CheckAtStartupBox" DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                          VerticalAlignment="Center" Margin="16,0,0,0" Click="CheckAtStartup_Click"
+                          AutomationProperties.Name="{local:Tr UpdateCheckAtStartup}" />
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{local:Tr UpdateCheckAtStartup}" />
+                  <TextBlock Style="{StaticResource CardDescription}" Text="{local:Tr UpdateCheckAtStartupDescription}" />
+                </StackPanel>
+              </DockPanel>
+              <Rectangle Style="{StaticResource CardDivider}" />
+              <DockPanel Style="{StaticResource CardSubRow}">
+                <ComboBox x:Name="ChannelBox" DockPanel.Dock="Right" Width="230" VerticalAlignment="Center"
+                          Margin="16,0,0,0" SelectionChanged="ChannelBox_SelectionChanged"
+                          AutomationProperties.Name="{local:Tr UpdateChannel}" />
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{local:Tr UpdateChannel}" />
+                  <TextBlock Style="{StaticResource CardDescription}" Text="{local:Tr UpdateChannelDescription}" />
+                </StackPanel>
+              </DockPanel>
+            </StackPanel>
+          </Border>
+          <Border x:Name="StoreUpdatesCard" Style="{StaticResource SettingCard}" Visibility="Collapsed">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Left" Style="{StaticResource CardIcon}" Text="&#xE719;" />
+              <Button DockPanel.Dock="Right" Content="{local:Tr OpenStore}" MinWidth="230" VerticalAlignment="Center"
+                      Margin="16,0,0,0" Click="OpenStore_Click" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{local:Tr UpdatesByStore}" />
+                <TextBlock x:Name="StoreVersionText" Style="{StaticResource CardDescription}" />
               </StackPanel>
             </DockPanel>
           </Border>

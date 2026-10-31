@@ -7,7 +7,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 // Generates the icon of LocalBell: src\LocalBell.App\Assets\LocalBell.ico (16 to 256 px), LocalBell.png (256 px, shown
-// inside the app: an .ico would show its first, 16 px, frame) and docs\icon-256.png (the README).
+// inside the app: an .ico would show its first, 16 px, frame), docs\icon-256.png (the README) and the logos of the
+// Microsoft Store package (store\Assets, as NowPlaying's).
 // The generated files are committed: run this again only to change the design.
 // Design (chosen on October 31, 2026 among the proposals of .local\icon-mockups.cs): a white counter bell (push button,
 // dome, base) on a rounded square with an amber-to-orange diagonal gradient; 16, 20, 24 and 32 px drawn by hand on whole
@@ -35,6 +36,23 @@ static class Icons
         SaveIco(Path.Combine(assets, "LocalBell.ico"));
         SavePng(Draw(256), Path.Combine(assets, "LocalBell.png"));
         SavePng(Draw(256), Path.Combine(root, "docs", "icon-256.png"));
+
+        // Logos of the Store package (store\AppxManifest.xml, scripts\build-store.ps1). Windows picks the size it needs:
+        // a scale for the Start menu and the Store, a target size for the taskbar and File Explorer ("unplated": the
+        // icon as it is, on no colored plate).
+        string store = Path.Combine(root, "store", "Assets");
+        Directory.CreateDirectory(store);
+        foreach (int scale in new[] { 100, 200 })
+        {
+            SavePng(Draw(50 * scale / 100), Path.Combine(store, $"StoreLogo.scale-{scale}.png"));
+            SavePng(Draw(44 * scale / 100), Path.Combine(store, $"Square44x44Logo.scale-{scale}.png"));
+            SavePng(Draw(150 * scale / 100), Path.Combine(store, $"Square150x150Logo.scale-{scale}.png"));
+        }
+        foreach (int size in new[] { 16, 20, 24, 30, 32, 36, 40, 48, 64, 256 })
+        {
+            SavePng(Draw(size), Path.Combine(store, $"Square44x44Logo.targetsize-{size}.png"));
+            SavePng(Draw(size), Path.Combine(store, $"Square44x44Logo.targetsize-{size}_altform-unplated.png"));
+        }
     }
 
     // Small sizes on whole pixels (no 4 % margin), larger ones from the 256 design.

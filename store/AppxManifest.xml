@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Microsoft Store version of LocalBell (as NowPlaying's): a full MSIX package of the same app, built by
+  scripts\build-store.ps1 next to the installer of the GitHub version (which this package does not change).
+
+  Identity: Publisher is the author's Partner Center account (the one of NowPlaying). Name is to be checked against
+  Partner Center (Product identity page) once "LocalBell" is reserved there: the Store refuses a package whose
+  identity is not the product's. The package is not signed: the Store signs it when it publishes it.
+  Version: written by the build script from Directory.Build.props (0.2.0 gives 0.2.0.0, the Store wants the last
+  number at 0).
+
+  One application (the Store takes no package with several), with:
+  - its startup task: start with Windows, on from the first launch as the GitHub version (Services\AppPackage.cs);
+  - its firewall rules, as the installer's netsh rule: the other PCs reach LocalBell (UDP 53318 for the
+    announcements, TCP 53318 and the next ones for its small server), on every network profile.
+
+  runFullTrust: a desktop app (its window over the taskbar, the sound of Windows turned back on while it rings).
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop2="http://schemas.microsoft.com/appx/manifest/desktop/windows10/2"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap desktop desktop2 rescap">
+
+  <Identity
+    Name="QuentinPerou.LocalBell"
+    Publisher="CN=E4BBF1EB-8886-49FD-8647-36786CAF5AC5"
+    Version="0.0.0.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>LocalBell</DisplayName>
+    <PublisherDisplayName>QuentinPerou</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Resources>
+    <Resource Language="en-us" />
+    <Resource Language="fr-fr" />
+  </Resources>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+  <Applications>
+    <Application Id="App" Executable="LocalBell.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="LocalBell"
+        Description="A doorbell between the PCs of a local network"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png" />
+
+      <Extensions>
+        <!-- Start with Windows, near the clock; the user turns it off in the app, Task Manager or Settings. -->
+        <desktop:Extension Category="windows.startupTask" Executable="LocalBell.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="LocalBellStartup" Enabled="true" DisplayName="LocalBell" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Extensions>
+    <!-- The other PCs reach LocalBell: the rule of the installer (installer\LocalBell.iss), for the package (an
+         extension of the package, not of the application). -->
+    <desktop2:Extension Category="windows.firewallRules">
+      <desktop2:FirewallRules Executable="LocalBell.exe">
+        <desktop2:Rule Direction="in" IPProtocol="UDP" Profile="all" />
+        <desktop2:Rule Direction="in" IPProtocol="TCP" Profile="all" />
+      </desktop2:FirewallRules>
+    </desktop2:Extension>
+  </Extensions>
+</Package>

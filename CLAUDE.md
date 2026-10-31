@@ -8,8 +8,8 @@ Guidance for Claude Code and contributors working on this repository. `README.md
 **LocalBell**: a small open-source (MIT) Windows app, a **doorbell between the PCs of a local network**, on the
 principle of LocalSend: install it, name the PC, every other PC running it sees it and can **ring it, with or without
 a message**; the PC rung shows a **popup in a corner** and rings, and can reply in one click ("J'arrive"…). For
-colleagues of a shop or an office calling each other. **Windows 10 (2004+) and Windows 11.** No server anywhere, no
-internet. UI in English and French. Author: [QuentinPerou](https://github.com/quentinperou) (a photo shop); credits
+colleagues of a shop or an office calling each other. **Windows 10 (2004+) and Windows 11.** No server anywhere; the
+internet only for the update check of the GitHub version (none in the Microsoft Store version). UI in English and French. Author: [QuentinPerou](https://github.com/quentinperou) (a photo shop); credits
 wording: "Developed by QuentinPerou, with Claude Code (Anthropic)". Named **DeskBell** at first (the folder
 "Sonnette", then "DeskBell"); renamed **LocalBell** by the author on October 31, 2026, before any release ("ça me
 paraît plus cohérent"): code, protocol tag and API path, settings folder, installer and docs alike.
@@ -18,14 +18,17 @@ paraît plus cohérent"): code, protocol tag and API path, settings folder, inst
 
 ## Project status (October 31, 2026)
 
-Version **0.1.0**, not released, no Git repository yet (the author creates it and commits himself).
+Version **0.1.0**, not released. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
+"LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
+repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
 - Done: the network (`LocalBell.Core`, tested: 52 tests), the icon, the app: the list window, the popup (discreet
   or loud), the ring sounds, the bell near the clock with its menu, "do not disturb" (moon button, banner, menu),
   favourites (star), single instance, **Settings on six pages** (as approved: name of the PC, start with Windows,
   do not disturb, language, theme; sound + own WAV/MP3 file, volume, ring when Windows is muted, repeat; popup style
   with previews, corner, screen, closing; ready-made messages and replies; this PC's address, PCs added by hand, PCs
-  found; about), the installer (with its firewall rule), the build script, the GitHub workflow.
+  found; about; updates since October 31, a seventh page), the installer (with its firewall rule), the build script,
+  the GitHub workflow.
 - Tried on the author's PC: two LocalBell (`--profile test-a` / `test-b`) find each other, ring and reply ("ça
   marche !", October 31); Settings opened by UI Automation, each page pictured (`.local\maquettes\essai-parametres-*`).
 - **The taskbar widget** (October 31): the bell or the favourite, the badge of missed rings, the moon, its flyout
@@ -45,8 +48,18 @@ Version **0.1.0**, not released, no Git repository yet (the author creates it an
   and **D, chosen** (B with the popup above the taskbar on the right, the windows raised and apart): `hero.cs -- D`, copied to
   `.github\hero.png`; the three kept in `.local\readme\`.
 - **Renamed LocalBell** (October 31, his "Oui, renomme tout"; it was DeskBell), the project folder too: `F:\LocalBell`.
-- Next: a remembered window place, a first install at the shop. Maybe later: updates from the app (as PageCompose's
-  `Updater`), the widget in a process of its own owned by the taskbar (visible while Start is open), as NowPlaying.
+- **Updates from GitHub and a Microsoft Store version** (October 31, his request "comme pour mes autres projets"):
+  PageCompose's `UpdateFeed` / `SemanticVersion` (Core, tested) and `Updater` (check at startup, Stable/Beta channel,
+  SHA-256, silent install, relaunch near the clock), a bar over the list (drawn as the "do not disturb" banner) and a
+  seventh Settings page, Updates; NowPlaying's Store version (`store/`, `scripts/build-store.ps1`,
+  `Services/AppPackage`): the same exe in an MSIX package, built once here (72 MB, makeappx accepted the manifest).
+  Not tried yet: the packaged app itself (registering it installs it on the PC: ask him), an update installed from a
+  real release (none before he publishes), the bar on screen. Before the Store: he reserves the name in Partner
+  Center (NowPlaying's account) and the `Identity` of the manifest is checked against it.
+- **The widget in a process of its own, owned by the taskbar** (October 31, his "Oui, vas-y"), as NowPlaying's: it
+  stays over the taskbar with Start open and whatever raises the taskbar; a hung widget process is killed and started
+  again (tried). He checked it stays with Start open ("Oui, il reste").
+- Next: a remembered window place, a first install at the shop.
 
 ## Design decisions (approved by the author, October 31, 2026)
 
@@ -67,7 +80,7 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
 - **Taskbar widget: the bell alone without a favourite** (a click opens the list; a red badge counts the missed
   rings), **the bell and the favourite's name with one** (a click rings it, the arrow opens the list). The favourite
   is the starred row.
-- **Settings on six pages with a menu on the left**, laid out as NowPlaying's (the icon, "LocalBell" and this PC above
+- **Settings on six pages with a menu on the left** (a seventh, Updates, since October 31, as in his other apps), laid out as NowPlaying's (the icon, "LocalBell" and this PC above
   the menu, the page title at the top of the right column): General (the name of the PC, start with Windows, the
   place of the widget, do not disturb, language, theme), Ring (sound, own WAV/MP3, volume of its own, ring when Windows is muted,
   repeat), Popup (style, corner, screen, closing), Messages (ready-made messages, the three replies), Network (this
@@ -107,7 +120,10 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     between two networks joins them all). PCs not heard for 45 s get a hello; leaving, a PC tells the others (UDP
     and HTTP). Rings carry an id: one received twice (two addresses) shows once. Started on the thread pool; events
     come on pool threads.
-- `src/LocalBell.App` (WPF, net10.0-windows, Fluent theme, Mica on Windows 11):
+  - `Updates/UpdateFeed` + `SemanticVersion` (PageCompose's): the GitHub "list releases" API of
+    `quentinperou/LocalBell`, the asset `LocalBell-Setup-<version>.exe` and its SHA-256 (`digest`), the newest
+    version of the channel (never a downgrade), the download.
+- `src/LocalBell.App` (WPF, net10.0-windows10.0.19041.0 for the Windows projection, Fluent theme, Mica on Windows 11):
   - `App`: arguments `--hidden`, `--profile NAME` (settings in `%LOCALAPPDATA%\LocalBell\profiles\NAME`, its own id:
     two LocalBell on one PC), `--no-scan`; one instance per profile (a second launch shows the window); language and
     theme (`LOCALBELL_LANG`, `LOCALBELL_THEME` force them); first start: the ready-made messages and replies in the UI
@@ -122,25 +138,50 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     changed it), `Services/WindowsStartup` (the user's Run key, `--hidden`; only the installed app, in Program Files,
     follows the setting at each start), `Services/TrayIcon` (Windows Forms NotifyIcon, a WPF Fluent menu opened from
     a small active window), `Services/AppSettings` (`settings.json`).
-  - `TaskbarWidget` + `WidgetFlyout`: NowPlaying's taskbar widget technique (`src/NowPlaying/TaskbarWidget.xaml.cs`
-    of github.com/quentinperou/NowPlaying): a borderless window of its own, `WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE`
-    (`WM_MOUSEACTIVATE` → `MA_NOACTIVATE`), topmost, put back on top at each foreground change (`SetWinEventHook`), an
-    app bar without room for `ABN_FULLSCREENAPP`, transparent through DWM (`ThemeMode="None"`); placed after the
-    Widgets (weather) button found by UI Automation, else (Windows 10, icons aligned left, or Settings → near the
-    clock) left of `TrayNotifyWnd`; past the windows of other apps laid over the taskbar (`OtherWidgets`: visible, not
-    cloaked, within the bar's height, narrower than half of it, not Explorer's nor ours; looked for every 2 s);
-    colours from Windows' mode (`WindowsTheme`). Unlike NowPlaying's it is in the app's process and **not owned by
-    the taskbar** (an owned window shares the taskbar's input: a hang would freeze it; NowPlaying uses a process of its
-    own for that): it goes under the taskbar while Start or search is open. The flyout is active while shown and hides
-    when it loses the focus (the missed rings are then seen). `--no-widget` for the second LocalBell of a try.
+  - `Services/Updater` (PageCompose's): check at startup unless turned off, download to `%TEMP%\LocalBell-Update`,
+    the installer run with `/SP- /SILENT /NORESTART /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS /RELAUNCH=1` (the
+    Restart Manager closes LocalBell: WPF quits on its `WM_QUERYENDSESSION`, the node tells the others; the
+    installer starts it again with `--hidden`); `UpdateBar` over the list, Settings → Updates.
+  - `Services/AppPackage` (NowPlaying's): the Store version is the same exe run from its MSIX package
+    (`GetCurrentPackageFullName`). In it: the startup task of the manifest instead of the Run key (a package's HKCU
+    writes go to its own copy), started by it = `--hidden` (`ActivationKind.StartupTask`); no GitHub update (the
+    Updates page opens the Store); the firewall rules of the manifest (a package extension, makeappx refuses them under
+    the application) instead of the installer's netsh; the GitHub version, if installed, offered once for removal
+    (one LocalBell at a time: the same mutex). `store/`: `AppxManifest.xml` (identity to check against Partner
+    Center), `Assets/` (by `make-icons.cs`), `listing.md` (the texts for Partner Center).
+  - `TaskbarWidget` (in a process of its own) + `WidgetFlyout` (in the app): NowPlaying's taskbar widget technique
+    (`src/NowPlaying/TaskbarWidget.xaml.cs` and `Services/Taskbar*.cs` of github.com/quentinperou/NowPlaying), since
+    October 31 (the author: it vanished while Start was open, and came and went with NowPlaying's widget raising
+    the taskbar every 15 s). The window is **owned by the taskbar** (`GWLP_HWNDPARENT`): an owned window always stays
+    above its owner, Start or search open too. That tie shares the two threads' input, so it runs in
+    `LocalBell.exe --taskbar PIPE` (`Services/TaskbarClient`: no network, no settings), started by the app
+    (`Services/TaskbarHost`): one line of JSON per change over a named pipe (`Services/TaskbarLink`: `TaskbarState`,
+    `LineChannel`), its clicks back ("flyout", "ring", "menu", with `AllowSetForegroundWindow` so that the app may
+    activate its flyout and its menu), its placement for the developer log ("log"); a ping a second, a widget silent
+    2 s is killed (the taskbar free again) and started again (1 s, then 2, 4… up to 60 s while it keeps failing). Tried
+    by suspending it: killed after 2.3 s, a new one 2 s later. It quits when the pipe closes (the app gone) or its
+    taskbar does (Explorer restarted). Made at its first showing, out of sight, with its content (made beforehand,
+    empty, Windows held it to 136 px). `WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE` (`WM_MOUSEACTIVATE` → `MA_NOACTIVATE`),
+    topmost, put back on top at each foreground change (`SetWinEventHook`), an app bar without room for
+    `ABN_FULLSCREENAPP`, transparent through DWM (`ThemeMode="None"`), the arrow pointer (no hand, as the taskbar's
+    buttons); placed after the Widgets (weather) button found by UI Automation, else (Windows 10, icons aligned left,
+    or Settings → near the clock) left of `TrayNotifyWnd` and of the weather (with the icons on the left Windows puts
+    it there); the buttons looked for again when the taskbar changes (its rectangle, its notification area,
+    `TaskbarAl`), 2 s later (they slide), and every 10 s; past the windows of other apps laid over the taskbar
+    (`OtherWidgets`: visible, not cloaked, within the bar's height, narrower than half of it, not Explorer's nor
+    LocalBell's; looked for every 2 s); colours from Windows' mode (`WindowsTheme`). The flyout is the app's, active
+    while shown, hidden when it loses the focus (the missed rings are then seen). `--no-widget` for the second
+    LocalBell of a try.
   - `Menus.xaml` + `Services/PopupMenu`: the menus of the bell near the clock and of the widget, drawn as Windows 11's
     in Windows' mode (NowPlaying's, with sub-menus), opened from a tiny window activated first, above the taskbar for
     the widget.
-  - `SettingsWindow`: six pages from a menu on the left (PageCompose's structure), each change applied and saved at
-    once; a language change builds the windows again (texts are read when a window is built).
+  - `SettingsWindow`: seven pages from a menu on the left (PageCompose's structure; Updates since October 31), each
+    change applied and saved at once; a language change builds the windows again (texts are read when a window is
+    built).
   - `Properties/Strings.resx` + `Strings.fr.resx`, `{local:Tr Key}` in XAML, `Strings.Get/Format/Count` in code.
-- `tests/LocalBell.Core.Tests` (xUnit): the protocol, the addresses, the directory, the server, `BellNode` end to end
-  (several nodes on 127.0.0.1, without UDP: nothing leaves the PC), and the parity of the two languages.
+- `tests/LocalBell.Core.Tests` (xUnit, 85 tests): the protocol, the addresses, the directory, the server, `BellNode`
+  end to end (several nodes on 127.0.0.1, without UDP: nothing leaves the PC), the update feed, and the parity of the
+  two languages.
 
 ## Precautions
 
@@ -160,8 +201,13 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
 dotnet build LocalBell.slnx
 dotnet test tests\LocalBell.Core.Tests
 .\scripts\build.ps1                      # tests, dist\app, dist\LocalBell-Setup-<version>.exe (Inno Setup 6)
-dotnet run scripts\make-icons.cs         # the icon files (committed), from the repository root
+.\scripts\build-store.ps1                # tests, dist\store\LocalBell_<version>.0_x64.msix (Windows SDK)
+dotnet run scripts\make-icons.cs         # the icon files and the Store logos (committed), from the repository root
 ```
+
+The Store version in development: `Add-AppxPackage -Register dist\store\layout\AppxManifest.xml` (Developer Mode,
+on at the shop PC; it installs LocalBell for the user, with its startup task and firewall rules: ask the author
+first), `Get-AppxPackage QuentinPerou.LocalBell | Remove-AppxPackage` after.
 
 ## Working on several PCs
 
@@ -173,5 +219,7 @@ the drive: `git -c safe.directory=<path> …` on the shop PC.
 ## Releasing
 
 As PageCompose: bump `Directory.Build.props`, commit "LocalBell X.Y.Z" (the author's commits, **no Co-Authored-By
-line**), lightweight tag `vX.Y.Z`; the workflow builds and publishes the release with the installer. Never push nor
-sign in to GitHub from the shop PC.
+line**), lightweight tag `vX.Y.Z`; the workflow builds and publishes the release with the installer (a tag with a
+suffix is a pre-release, for the Beta channel). Never push nor sign in to GitHub from the shop PC: he publishes from
+home with his account. The Store version goes out **by hand**, as NowPlaying's: `scripts\build-store.ps1`, then a new
+submission in Partner Center (the `.msix`, the texts of `store/listing.md`); final versions only (x.y.z.0).

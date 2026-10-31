@@ -21,7 +21,7 @@
 ## Fonctionnalités
 
 Installez LocalBell sur chaque PC et donnez une fois un nom à chacun : chaque PC du réseau local voit les autres et peut
-les sonner. Pas de serveur, pas de compte, pas d'internet.
+les sonner. Pas de serveur, pas de compte : les postes se parlent sur le réseau local seulement.
 
 ### Sonner
 
@@ -51,7 +51,8 @@ les sonner. Pas de serveur, pas de compte, pas d'internet.
 
 ### Et aussi
 
-Anglais et français, thème clair ou sombre, démarrage avec Windows, Windows 10 et 11.
+Anglais et français, thème clair ou sombre, démarrage avec Windows, Windows 10 et 11. **Mises à jour en un clic**
+depuis l'appli (GitHub Releases).
 
 ## Installation
 
@@ -86,15 +87,21 @@ Tout s'installe avec `winget` (intégré à Windows 11), depuis un terminal :
 | **Git** | Récupérer le code | `winget install Git.Git` |
 | **SDK .NET 10** | Compiler l'appli (C# / WPF) et lancer les tests | `winget install Microsoft.DotNet.SDK.10` |
 | **Inno Setup 6** | Construire l'installeur | `winget install JRSoftware.InnoSetup` |
+| **SDK Windows** | `makeappx` et `makepri`, pour empaqueter la version Microsoft Store | `winget install Microsoft.WindowsSDK.10.0.26100` |
 
 ### Compiler
 
 ```powershell
 .\scripts\build.ps1
+.\scripts\build-store.ps1
 ```
 
-Le script lance les tests, puis produit dans `dist\` l'appli (`app\`, dépendante du framework) et l'installeur
+`build.ps1` lance les tests, puis produit dans `dist\` l'appli (`app\`, dépendante du framework) et l'installeur
 (`LocalBell-Setup-<version>.exe`). Options : `-SkipTests`, `-NoInstaller`.
+
+`build-store.ps1` produit `dist\store\LocalBell_<version>.0_x64.msix`, la même appli avec .NET dedans, non signée
+(le Store la signe). Dans ce paquet, LocalBell démarre avec Windows par sa tâche de démarrage, ses règles de pare-feu
+viennent avec le paquet, et le Store la met à jour.
 
 ### Pendant le développement
 
@@ -116,7 +123,8 @@ src/
   LocalBell.App/    Appli WPF : la liste, la popup, les sonneries, le widget de la barre des tâches, la cloche
                    près de l'horloge, les paramètres, les textes de l'interface
 installer/         Script Inno Setup de l'installeur (avec sa règle de pare-feu)
-scripts/           build.ps1 (compilation complète), make-icons.cs (régénère l'icône)
+store/             Le paquet Microsoft Store : son manifeste, ses logos, le texte de sa fiche
+scripts/           build.ps1 (compilation complète), build-store.ps1 (paquet Store), make-icons.cs (régénère les icônes)
 tests/             Tests unitaires (xUnit), plusieurs LocalBell qui se parlent sur 127.0.0.1
 docs/              Icône du README
 .github/workflows/ Compilation automatique sur GitHub (et publication des versions)
@@ -136,26 +144,32 @@ les tests vérifient qu'ils ont les mêmes clés et les mêmes paramètres. Mess
 ### Icône
 
 `dotnet run scripts\make-icons.cs` dessine l'icône (`src/LocalBell.App/Assets/LocalBell.ico`, son image en 256 px, et
-`docs/icon-256.png`) ; ses petites tailles sont dessinées au pixel près. Les fichiers sont versionnés : ne le relancez
-que pour changer le dessin.
+`docs/icon-256.png`, les logos du paquet Store dans `store/Assets`) ; ses petites tailles sont dessinées au pixel près.
+Les fichiers sont versionnés : ne le relancez que pour changer le dessin.
 
 ### Publier une version
 
 1. Mettez à jour `<Version>` dans `Directory.Build.props`.
 2. Commitez, puis créez et poussez un tag : `git tag v1.0.0`, puis `git push origin v1.0.0`.
-3. Le workflow GitHub Actions compile, teste et publie l'installeur dans une Release.
+3. Le workflow GitHub Actions compile, teste et publie l'installeur dans une Release ; l'appli la trouve à son
+   démarrage suivant. Un tag avec un suffixe (`v1.1.0-beta.1`) est une préversion, proposée au canal Bêta seulement.
+4. Pour le Store : `.\scripts\build-store.ps1`, puis une nouvelle soumission dans Partner Center avec le nouveau
+   `.msix` (`store/listing.md` contient les textes de la fiche).
 
 ## Feuille de route
 
-- [ ] Les mises à jour depuis l'appli.
-- [ ] Le widget de la barre des tâches visible quand le menu Démarrer est ouvert.
+- [ ] Dans le Microsoft Store.
 - [ ] **Signature gratuite** de l'installeur via [SignPath Foundation](https://signpath.org) (pour les projets open source).
 
 ## Politique de confidentialité
 
 LocalBell ne parle qu'aux PC de votre réseau local, et à ceux que vous ajoutez par leur adresse : leurs noms, leur
-statut, les sonneries et les messages que vous envoyez. Rien ne part sur internet, il n'y a ni compte ni statistiques.
-Les messages ne sont pas chiffrés : n'envoyez pas de secrets.
+statut, les sonneries et les messages que vous envoyez. Il n'y a ni compte ni statistiques. Les messages ne sont pas
+chiffrés : n'envoyez pas de secrets.
+
+Le seul accès à internet est la recherche de mises à jour : au démarrage (désactivable dans **Paramètres → Mises à
+jour**), l'appli demande à GitHub (`api.github.com`) la dernière version, et télécharge son installeur depuis GitHub
+quand vous cliquez sur **Mettre à jour**. La version Microsoft Store n'en a pas (le Store la met à jour).
 
 Le lien *Code source sur GitHub* des Paramètres ne s'ouvre dans votre navigateur que si vous cliquez dessus.
 

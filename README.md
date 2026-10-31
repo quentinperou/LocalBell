@@ -21,7 +21,7 @@
 ## Features
 
 Install LocalBell on each computer and name each one once: every computer of the local network sees the others and
-can ring them. No server, no account, no internet.
+can ring them. No server, no account: the computers talk on the local network only.
 
 ### Ringing
 
@@ -50,7 +50,8 @@ can ring them. No server, no account, no internet.
 
 ### And also
 
-English and French, light or dark theme, starts with Windows, Windows 10 and 11.
+English and French, light or dark theme, starts with Windows, Windows 10 and 11. **Updates in one click** from the
+app (GitHub Releases).
 
 ## Installation
 
@@ -84,15 +85,21 @@ Everything installs with `winget` (built into Windows 11), from a terminal:
 | **Git** | Get the code | `winget install Git.Git` |
 | **.NET 10 SDK** | Build the app (C# / WPF) and run the tests | `winget install Microsoft.DotNet.SDK.10` |
 | **Inno Setup 6** | Build the installer | `winget install JRSoftware.InnoSetup` |
+| **Windows SDK** | `makeappx` and `makepri`, to pack the Microsoft Store version | `winget install Microsoft.WindowsSDK.10.0.26100` |
 
 ### Build
 
 ```powershell
 .\scripts\build.ps1
+.\scripts\build-store.ps1
 ```
 
-The script runs the tests, then produces in `dist\` the app (`app\`, framework-dependent) and the installer
+`build.ps1` runs the tests, then produces in `dist\` the app (`app\`, framework-dependent) and the installer
 (`LocalBell-Setup-<version>.exe`). Options: `-SkipTests`, `-NoInstaller`.
+
+`build-store.ps1` produces `dist\store\LocalBell_<version>.0_x64.msix`, the same app with .NET inside, not signed
+(the Store signs it). In it, LocalBell starts with Windows through its startup task, its firewall rules come with the
+package, and the Store updates it.
 
 ### While developing
 
@@ -114,7 +121,8 @@ src/
   LocalBell.App/    WPF app: the list, the popup, the bell sounds, the taskbar widget, the bell near the clock,
                    Settings, UI strings
 installer/         Inno Setup script of the installer (with its firewall rule)
-scripts/           build.ps1 (full build), make-icons.cs (regenerates the icon)
+store/             The Microsoft Store package: its manifest, its logos, the text of its listing
+scripts/           build.ps1 (full build), build-store.ps1 (Store package), make-icons.cs (regenerates the icons)
 tests/             Unit tests (xUnit), several LocalBell talking on 127.0.0.1
 docs/              README icon
 .github/workflows/ Automated build on GitHub (and release publishing)
@@ -134,26 +142,32 @@ check that both have the same keys and placeholders. Installer messages: `instal
 ### Icon
 
 `dotnet run scripts\make-icons.cs` draws the icon (`src/LocalBell.App/Assets/LocalBell.ico`, its 256 px image, and
-`docs/icon-256.png`); its small sizes are drawn on whole pixels. The files are committed: run it again only to change
-the design.
+`docs/icon-256.png`, the logos of the Store package in `store/Assets`); its small sizes are drawn on whole pixels. The
+files are committed: run it again only to change the design.
 
 ### Releasing a version
 
 1. Update `<Version>` in `Directory.Build.props`.
 2. Commit, then create and push a tag: `git tag v1.0.0`, then `git push origin v1.0.0`.
-3. The GitHub Actions workflow builds, tests and publishes the installer in a Release.
+3. The GitHub Actions workflow builds, tests and publishes the installer in a Release; the app finds it at its next
+   start. A tag with a suffix (`v1.1.0-beta.1`) is a pre-release, offered to the Beta channel only.
+4. For the Store: `.\scripts\build-store.ps1`, then a new submission in Partner Center with the new `.msix`
+   (`store/listing.md` has the texts of the listing).
 
 ## Roadmap
 
-- [ ] Updates from the app.
-- [ ] The taskbar widget visible while Start is open.
+- [ ] In the Microsoft Store.
 - [ ] **Free signing** of the installer through [SignPath Foundation](https://signpath.org) (for open source projects).
 
 ## Privacy policy
 
 LocalBell talks only to the computers of your local network, and to those you add by their address: their names,
-their status, the rings and the messages you send. Nothing goes to the internet, there is no account and no
-statistics. The messages are not encrypted: do not send secrets.
+their status, the rings and the messages you send. There is no account and no statistics. The messages are not
+encrypted: do not send secrets.
+
+The only access to the internet is the update check: at startup (it can be turned off in **Settings → Updates**)
+the app asks GitHub (`api.github.com`) for the latest version, and downloads its installer from GitHub when you click
+**Update**. The Microsoft Store version has none (the Store updates it).
 
 The link *Source code on GitHub* in Settings opens in your browser only when you click it.
 

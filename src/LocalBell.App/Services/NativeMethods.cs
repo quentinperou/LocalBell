@@ -12,6 +12,7 @@ internal static class NativeMethods
     public const int MA_NOACTIVATE = 3;
 
     public const int GWL_EXSTYLE = -20;
+    public const int GWLP_HWNDPARENT = -8; // the owner of a top-level window
     public const int WS_EX_TOOLWINDOW = 0x00000080;
     public const int WS_EX_NOACTIVATE = 0x08000000;
 
@@ -31,7 +32,6 @@ internal static class NativeMethods
 
     public const int EVENT_SYSTEM_FOREGROUND = 0x0003;
     public const int WINEVENT_OUTOFCONTEXT = 0x0000;
-    public const int WINEVENT_SKIPOWNPROCESS = 0x0002;
 
     public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     public const int DWMWA_BORDER_COLOR = 34;
@@ -118,6 +118,15 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool AllowSetForegroundWindow(int processId);
+
+    [DllImport("kernel32.dll")]
+    public static extern bool GetNamedPipeClientProcessId(Microsoft.Win32.SafeHandles.SafePipeHandle pipe, out uint processId);
+
+    [DllImport("kernel32.dll")]
+    public static extern bool GetNamedPipeServerProcessId(Microsoft.Win32.SafeHandles.SafePipeHandle pipe, out uint processId);
 
     [DllImport("shell32.dll")]
     public static extern IntPtr SHAppBarMessage(int message, ref APPBARDATA data);

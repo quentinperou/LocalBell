@@ -8,10 +8,11 @@
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13">
   <!-- A borderless, transparent window over the taskbar, never activated: the widget (NowPlaying's way). Transparent
        through DWM (see TaskbarWidget.xaml.cs), not AllowsTransparency. ThemeMode="None": the Fluent theme of the app
-       windows must not paint it; its colours follow the taskbar (Windows' mode). -->
+       windows must not paint it; its colours follow the taskbar (Windows' mode). The arrow pointer, as over the
+       buttons of the taskbar (the author's wish, October 31): no hand. -->
   <Grid Height="40" Margin="0,0,0,0">
     <!-- The bell alone (no favourite): a click opens the flyout. -->
-    <Border x:Name="BellPart" Width="40" CornerRadius="4" Background="Transparent" Cursor="Hand"
+    <Border x:Name="BellPart" Width="40" CornerRadius="4" Background="Transparent"
             MouseLeftButtonUp="BellPart_Click">
       <Grid>
         <Path x:Name="BellIcon" Data="{StaticResource BellGeometry}" Width="18" Height="18" Stretch="Uniform" Fill="White" />
@@ -22,7 +23,7 @@
 
     <!-- The bell and the favourite: a click on them rings it, the arrow opens the flyout. -->
     <StackPanel x:Name="FavoritePart" Orientation="Horizontal" Visibility="Collapsed">
-      <Border x:Name="RingPart" CornerRadius="4,0,0,4" Background="Transparent" Cursor="Hand" Padding="10,0,9,0"
+      <Border x:Name="RingPart" CornerRadius="4,0,0,4" Background="Transparent" Padding="10,0,9,0"
               MouseLeftButtonUp="RingPart_Click">
         <StackPanel Orientation="Horizontal">
           <Grid VerticalAlignment="Center">
@@ -35,7 +36,7 @@
         </StackPanel>
       </Border>
       <Rectangle x:Name="Divider" Width="1" Height="20" Fill="#40FFFFFF" VerticalAlignment="Center" />
-      <Border x:Name="ArrowPart" CornerRadius="0,4,4,0" Background="Transparent" Cursor="Hand" Padding="8,0,9,0"
+      <Border x:Name="ArrowPart" CornerRadius="0,4,4,0" Background="Transparent" Padding="8,0,9,0"
               MouseLeftButtonUp="ArrowPart_Click">
         <TextBlock x:Name="Arrow" Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="9"
                    Foreground="White" VerticalAlignment="Center" />

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Net;
 using System.Reflection;
@@ -21,7 +22,9 @@ public partial class App : Application
     private TrayIcon? tray;
     private MainViewModel? viewModel;
     private SettingsWindow? settingsWindow;
-    private TaskbarWidget? widget;
+    private TaskbarHost? taskbar;
+    private WidgetFlyout? flyout;
+    private PeerItem? favorite; // the one the widget shows, watched for its name and its notes
     private bool withWidget = true;
     private string? profile;
 
@@ -36,15 +39,29 @@ public partial class App : Application
     /// Arguments: --hidden (started with Windows: the bell near the clock only), --profile NAME (a LocalBell of its
     /// own, with its own settings and id: to try two of them on one PC), --no-scan (no scan of the network when the
     /// announcements find nobody: tries on a network that is not one's own), --no-widget (no widget in the taskbar:
-    /// the second LocalBell of a try, whose widget would lie over the first one's).
+    /// the second LocalBell of a try, whose widget would lie over the first one's). --taskbar PIPE: the widget process,
+    /// started by the app itself (<see cref="TaskbarHost"/>).
     /// </summary>
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args is [TaskbarHost.Argument, var pipe])
+        {
+            TaskbarClient.Run(this, pipe);
+            return;
+        }
         profile = ArgumentAfter(e.Args, "--profile");
-        bool hidden = e.Args.Contains("--hidden");
+        // The Store version is started at sign-in by its startup task, which gives no arguments.
+        bool hidden = e.Args.Contains("--hidden") || AppPackage.LaunchedAtStartup();
         bool scan = !e.Args.Contains("--no-scan");
         withWidget = !e.Args.Contains("--no-widget");
+
+        // Before the single instance: the version from GitHub may be the one running.
+        if (profile is null && OfferClassicRemoval())
+        {
+            Shutdown();
+            return;
+        }
 
         // One LocalBell per profile and per Windows session: a second launch shows the window of the first.
         string key = "Local\\LocalBell-" + (profile ?? "default");
@@ -61,8 +78,8 @@ public partial class App : Application
         Settings = AppSettings.Load(AppSettings.FolderOf(profile));
         DevLog.UseFolder(AppSettings.FolderOf(profile));
         DevLog.Enabled = Settings.DeveloperMode;
-        DevLog.Write($"LocalBell {Version} starts{(profile is null ? "" : $", profile {profile}")}, Windows {Environment.OSVersion.Version}"
-            + $", arguments: {string.Join(' ', e.Args)}");
+        DevLog.Write($"LocalBell {Version}{(AppPackage.IsPackaged ? " (Microsoft Store)" : "")} starts"
+            + $"{(profile is null ? "" : $", profile {profile}")}, Windows {Environment.OSVersion.Version}, arguments: {string.Join(' ', e.Args)}");
 
         // UI language and theme: the ones chosen in Settings; LOCALBELL_LANG=en|fr and LOCALBELL_THEME=Light|Dark
         // force one, handy to test both.
@@ -115,18 +132,77 @@ public partial class App : Application
 
         MainWindow = new MainWindow(viewModel);
         if (!hidden) MainWindow.Show();
-        if (withWidget) ShowWidget();
+        if (withWidget) StartWidget();
+
+        // A newer version from GitHub shows over the list and in Settings → Updates (not in the Store version).
+        _ = Updater.CheckAtStartupAsync();
     }
 
-    /// <summary>Its place changed in Settings (left, near the clock, hidden).</summary>
-    public void PlaceWidget() => widget?.Place();
-
-    /// <summary>The widget in the taskbar, built again after a change of language (its texts are read when it is built).</summary>
-    private void ShowWidget()
+    /// <summary>
+    /// The Store version, the first time it finds the version installed from GitHub on the PC: only one LocalBell runs
+    /// at a time, so it offers to uninstall that one (asked once). True when the uninstaller has been started: it closes
+    /// every LocalBell, so this one quits.
+    /// </summary>
+    private static bool OfferClassicRemoval()
     {
-        widget?.Close();
-        widget = new TaskbarWidget(viewModel!) { Left = -10000, Top = -10000 };
-        widget.Show();
+        if (!AppPackage.IsPackaged || AppPackage.ClassicUninstaller() is not { } uninstaller) return false;
+        var settings = AppSettings.Load(AppSettings.FolderOf(null));
+        if (settings.ClassicRemovalOffered) return false;
+        settings.ClassicRemovalOffered = true;
+        settings.Save();
+        ApplyLanguage(settings.Language);
+        if (MessageBox.Show(Strings.Get("ClassicRemovalText"), Strings.Get("AppTitle"), MessageBoxButton.YesNo, MessageBoxImage.Question)
+            != MessageBoxResult.Yes)
+            return false;
+        AppPackage.StartClassicUninstall(uninstaller);
+        return true;
+    }
+
+    /// <summary>
+    /// The widget in the taskbar, in a process of its own owned by the taskbar (<see cref="TaskbarHost"/>): it shows
+    /// what this app sends and gives its clicks back; its flyout and its menu open here.
+    /// </summary>
+    private void StartWidget()
+    {
+        taskbar = new TaskbarHost(Dispatcher);
+        taskbar.FlyoutRequested += ToggleFlyout;
+        taskbar.RingRequested += (_, _) =>
+        {
+            if (viewModel?.Favorite is { } item) _ = viewModel.RingAsync(item);
+        };
+        taskbar.MenuRequested += barTop => PopupMenu.Show(TrayMenuItems(), barTop);
+        viewModel!.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is null or nameof(MainViewModel.Favorite) or nameof(MainViewModel.IsDoNotDisturb)) UpdateWidget();
+        };
+        viewModel.MissedRings.CollectionChanged += (_, _) => UpdateWidget();
+        UpdateWidget();
+    }
+
+    /// <summary>What the widget shows, sent to its process when it changes; also its place, changed in Settings.</summary>
+    public void UpdateWidget()
+    {
+        if (taskbar is null || viewModel is null) return;
+        if (!ReferenceEquals(favorite, viewModel.Favorite))
+        {
+            if (favorite is not null) favorite.PropertyChanged -= OnFavoriteChanged;
+            favorite = viewModel.Favorite;
+            if (favorite is not null) favorite.PropertyChanged += OnFavoriteChanged;
+        }
+        var state = new TaskbarState(Settings.Widget, viewModel.IsDoNotDisturb,
+            favorite is null ? null : favorite.HasNote ? favorite.Note : favorite.Name, favorite?.Online ?? false,
+            viewModel.MissedRings.Count, Strings.Get("AppTitle"), favorite?.RingLabel);
+        taskbar.Update(state, enabled: Settings.Widget != WidgetPosition.Hidden);
+    }
+
+    private void OnFavoriteChanged(object? sender, PropertyChangedEventArgs e) => UpdateWidget();
+
+    /// <summary>The bell or the arrow of the widget: its flyout opens above it, or closes.</summary>
+    private void ToggleFlyout(int left, int barTop)
+    {
+        flyout ??= new WidgetFlyout(viewModel!);
+        if (flyout.IsVisible) flyout.Hide();
+        else flyout.ShowAbove(left, barTop);
     }
 
     private static string? ArgumentAfter(string[] args, string name)
@@ -197,8 +273,11 @@ public partial class App : Application
         MainWindow = window;
         if (visible) window.Show();
         old.CloseForQuit();
-        if (withWidget) ShowWidget();
+        // The flyout is built again in the new language when it opens next; the widget gets its tooltips.
+        flyout?.Close();
+        flyout = null;
         viewModel.RefreshTexts();
+        UpdateWidget();
         UpdateTrayTooltip();
         from.Close();
         OpenSettings(page);
@@ -250,7 +329,8 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         tray?.Dispose();
-        widget?.Close();
+        taskbar?.Dispose(); // its process ends with the pipe
+        flyout?.Close();
         if (node is { } running) Task.Run(() => running.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(3));
         Settings?.Save();
         if (instance is not null && node is not null) instance.ReleaseMutex();

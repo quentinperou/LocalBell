@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LocalBell.Core.Updates;
 
 namespace LocalBell.App.Services;
 
@@ -130,6 +131,14 @@ public sealed class AppSettings
 
     /// <summary>Developer mode (About, as in ScreenClip and TextCase; off by default): <see cref="DevLog"/> writes.</summary>
     public bool DeveloperMode { get; set; }
+
+    /// <summary>Asks GitHub for a newer version at each start (the version installed from GitHub only).</summary>
+    public bool CheckForUpdatesAtStartup { get; set; } = true;
+
+    public UpdateChannel UpdateChannel { get; set; } = UpdateChannel.Stable;
+
+    /// <summary>The Store version has offered once to uninstall the version installed from GitHub.</summary>
+    public bool ClassicRemovalOffered { get; set; }
 
     [JsonIgnore]
     public bool IsDoNotDisturb => DoNotDisturbUntil is { } until && until > DateTimeOffset.Now;

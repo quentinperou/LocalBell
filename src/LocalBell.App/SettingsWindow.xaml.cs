@@ -9,12 +9,13 @@ using LocalBell.App.Services;
 using LocalBell.App.ViewModels;
 using LocalBell.Core;
 using LocalBell.Core.Network;
+using LocalBell.Core.Updates;
 using Microsoft.Win32;
 
 namespace LocalBell.App;
 
 /// <summary>
-/// Settings, on six pages. Each change applies at once and is saved (no OK button, as in Windows 11); the name of the
+/// Settings, on seven pages. Each change applies at once and is saved (no OK button, as in Windows 11); the name of the
 /// PC when its box is left or Enter is pressed.
 /// </summary>
 public partial class SettingsWindow : Window
@@ -28,6 +29,7 @@ public partial class SettingsWindow : Window
     private readonly ObservableCollection<EditableText> replies;
     private readonly ObservableCollection<string> addresses;
     private readonly bool initialized;
+    private bool updating;
 
     public SettingsWindow(MainViewModel viewModel, BellNode node, string? profile, int page = 0)
     {
@@ -36,7 +38,7 @@ public partial class SettingsWindow : Window
         this.viewModel = viewModel;
         this.node = node;
         this.profile = profile;
-        pages = [GeneralPage, RingPage, PopupPage, MessagesPage, NetworkPage, AboutPage];
+        pages = [GeneralPage, RingPage, PopupPage, MessagesPage, NetworkPage, UpdatesPage, AboutPage];
         // The pages scroll rather than the window going past the screen.
         MaxHeight = SystemParameters.WorkArea.Height;
 
@@ -44,6 +46,7 @@ public partial class SettingsWindow : Window
         NameBox.Text = node.Name;
         ThisPcText.Text = Strings.Format("ThisPc", node.Name);
         StartupBox.IsChecked = settings.StartWithWindows;
+        if (AppPackage.IsPackaged) ShowStartupAsync();
         WidgetBox.Items.Add(new Option<WidgetPosition>(WidgetPosition.Left, Strings.Get("WidgetLeft")));
         WidgetBox.Items.Add(new Option<WidgetPosition>(WidgetPosition.NearClock, Strings.Get("WidgetNearClock")));
         WidgetBox.Items.Add(new Option<WidgetPosition>(WidgetPosition.Hidden, Strings.Get("WidgetHidden")));
@@ -104,6 +107,17 @@ public partial class SettingsWindow : Window
         ShowFound();
         node.PeersChanged += OnPeersChanged;
 
+        // Updates
+        GitHubUpdatesCard.Visibility = AppPackage.IsPackaged ? Visibility.Collapsed : Visibility.Visible;
+        StoreUpdatesCard.Visibility = AppPackage.IsPackaged ? Visibility.Visible : Visibility.Collapsed;
+        StoreVersionText.Text = Strings.Format("UpdatesByStoreHint", App.Version);
+        ChannelBox.Items.Add(new Option<UpdateChannel>(UpdateChannel.Stable, Strings.Get("UpdateChannelStable")));
+        ChannelBox.Items.Add(new Option<UpdateChannel>(UpdateChannel.Beta, Strings.Get("UpdateChannelBeta")));
+        Select(ChannelBox, settings.UpdateChannel);
+        CheckAtStartupBox.IsChecked = settings.CheckForUpdatesAtStartup;
+        ShowUpdateState();
+        Updater.Checked += Updater_Checked;
+
         // About
         VersionText.Text = Strings.Format("AboutVersion", App.Version);
         DeveloperModeBox.IsChecked = settings.DeveloperMode;
@@ -150,6 +164,7 @@ public partial class SettingsWindow : Window
     {
         viewModel.DoNotDisturbChanged -= OnDoNotDisturbChanged;
         node.PeersChanged -= OnPeersChanged;
+        Updater.Checked -= Updater_Checked;
         CommitName();
         settings.Save();
     }
@@ -181,11 +196,36 @@ public partial class SettingsWindow : Window
         ThisPcText.Text = Strings.Format("ThisPc", node.Name);
     }
 
-    private void StartupBox_Click(object sender, RoutedEventArgs e)
+    private async void StartupBox_Click(object sender, RoutedEventArgs e)
     {
         settings.StartWithWindows = StartupBox.IsChecked == true;
         settings.Save();
-        WindowsStartup.Apply(settings.StartWithWindows, profile);
+        ShowStartup(await WindowsStartup.SetAsync(settings.StartWithWindows, profile));
+    }
+
+    // The Store version: the state of its startup task, which the user may have changed in Windows.
+    private async void ShowStartupAsync() => ShowStartup(await WindowsStartup.GetAsync(settings.StartWithWindows));
+
+    private void ShowStartup(StartupState state)
+    {
+        StartupBox.IsChecked = state is StartupState.On;
+        StartupBox.Visibility = state is StartupState.On or StartupState.Off ? Visibility.Visible : Visibility.Collapsed;
+        StartupAppsButton.Visibility = state is StartupState.OffByUser ? Visibility.Visible : Visibility.Collapsed;
+        StartupNote.Text = state switch
+        {
+            StartupState.OffByUser => Strings.Get("StartWithWindowsOffByUser"),
+            StartupState.ByPolicy => Strings.Get("StartWithWindowsByPolicy"),
+            _ => "",
+        };
+        StartupNote.Visibility = StartupNote.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void StartupApps_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:startupapps");
+
+    private static void OpenUri(string uri)
+    {
+        try { Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); }
+        catch (System.ComponentModel.Win32Exception) { }
     }
 
     private void WidgetBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -193,7 +233,7 @@ public partial class SettingsWindow : Window
         if (!initialized) return;
         settings.Widget = Selected<WidgetPosition>(WidgetBox);
         settings.Save();
-        ((App)Application.Current).PlaceWidget();
+        ((App)Application.Current).UpdateWidget();
     }
 
     private void DndBox_Click(object sender, RoutedEventArgs e)
@@ -464,6 +504,110 @@ public partial class SettingsWindow : Window
         RefreshButton.IsEnabled = true;
         ShowFound();
     }
+
+    // ---- Updates ----
+
+    private void Updater_Checked(object? sender, EventArgs e) => ShowUpdateState();
+
+    /// <summary>
+    /// The installed version, then what the last check found (nothing before a check), or <paramref name="status"/>
+    /// (progress, error) instead.
+    /// </summary>
+    private void ShowUpdateState(string? status = null)
+    {
+        var available = Updater.Available;
+        InstalledVersionText.Text = Strings.Format("UpdateStatusIdle", App.Version);
+        UpdateStatusText.Text = status
+            ?? (available is not null ? Strings.Format("UpdateAvailable", available.Version)
+                : Updater.HasChecked ? Strings.Get("UpdateUpToDate")
+                : "");
+        UpdateStatusText.Visibility = UpdateStatusText.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        UpdateNotesLink.Visibility = available is not null && status is null ? Visibility.Visible : Visibility.Collapsed;
+
+        UpdateButton.Content = available is null ? Strings.Get("UpdateCheck") : Strings.Get("UpdateInstall");
+        if (available is null) UpdateButton.ClearValue(StyleProperty);
+        else UpdateButton.SetResourceReference(StyleProperty, "AccentButtonStyle");
+        UpdateButton.IsEnabled = !updating && !Updater.IsInstalling;
+    }
+
+    private async void UpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (Updater.Available is { } release) await InstallUpdateAsync(release);
+        else await CheckForUpdatesAsync();
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        updating = true;
+        ShowUpdateState(Strings.Get("UpdateStatusChecking"));
+        string? error = null;
+        try
+        {
+            await Updater.CheckAsync(settings.UpdateChannel);
+        }
+        catch (Exception ex)
+        {
+            error = Strings.Format("UpdateCheckFailed", Updater.Describe(ex));
+        }
+        updating = false;
+        ShowUpdateState(error);
+    }
+
+    private async Task InstallUpdateAsync(ReleaseInfo release)
+    {
+        if (Updater.IsInstalling) return;
+        updating = true;
+        ShowUpdateState(Strings.Get("UpdateDownloading"));
+        UpdateProgress.Value = 0;
+        UpdateProgress.IsIndeterminate = false;
+        UpdateProgress.Visibility = Visibility.Visible;
+        var progress = new Progress<double>(p =>
+        {
+            UpdateProgress.Value = p;
+            if (p < 1) return;
+            // Downloaded: the installer now waits for the UAC prompt, then installs.
+            UpdateProgress.IsIndeterminate = true;
+            ShowUpdateState(Strings.Get("UpdateStarting"));
+        });
+
+        string status;
+        try
+        {
+            if (await Updater.InstallAsync(release, progress)) return; // the app is closing, the installer takes over
+            status = Strings.Get("UpdateCancelled");
+        }
+        catch (Exception ex)
+        {
+            status = Strings.Format("ErrorUpdate", Updater.Describe(ex));
+        }
+        updating = false;
+        UpdateProgress.Visibility = Visibility.Collapsed;
+        ShowUpdateState(status);
+    }
+
+    private void UpdateNotes_Click(object sender, RoutedEventArgs e)
+    {
+        if (Updater.Available is { } release) Updater.OpenReleasePage(release);
+    }
+
+    private void CheckAtStartup_Click(object sender, RoutedEventArgs e)
+    {
+        settings.CheckForUpdatesAtStartup = CheckAtStartupBox.IsChecked == true;
+        settings.Save();
+    }
+
+    private async void ChannelBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized) return;
+        var channel = Selected<UpdateChannel>(ChannelBox);
+        if (channel == settings.UpdateChannel) return;
+        settings.UpdateChannel = channel;
+        settings.Save();
+        // What is offered depends on the channel: look again.
+        if (!updating) await CheckForUpdatesAsync();
+    }
+
+    private void OpenStore_Click(object sender, RoutedEventArgs e) => OpenUri(AppPackage.StorePage);
 
     // ---- About ----
 

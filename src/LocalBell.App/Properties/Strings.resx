@@ -149,4 +149,36 @@
   <data name="DeveloperLog" xml:space="preserve"><value>The log</value></data>
   <data name="DeveloperLogDescription" xml:space="preserve"><value>To send when something does not work.</value></data>
   <data name="DeveloperLogOpen" xml:space="preserve"><value>Open the log</value></data>
+  <data name="StartWithWindowsOffByUser" xml:space="preserve"><value>Turned off in the startup apps of Windows: turn it on again there.</value></data>
+  <data name="StartWithWindowsByPolicy" xml:space="preserve"><value>Set by the administrator of this PC.</value></data>
+  <data name="OpenStartupSettings" xml:space="preserve"><value>Startup apps</value></data>
+  <data name="PageUpdates" xml:space="preserve"><value>Updates</value></data>
+  <data name="UpdateStatusIdle" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="UpdateStatusChecking" xml:space="preserve"><value>Checking for updates…</value></data>
+  <data name="UpdateUpToDate" xml:space="preserve"><value>LocalBell is up to date.</value></data>
+  <data name="UpdateCheckFailed" xml:space="preserve"><value>Could not check for updates: {0}</value></data>
+  <data name="UpdateCheck" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="UpdateInstall" xml:space="preserve"><value>Update</value></data>
+  <data name="UpdateWhatsNew" xml:space="preserve"><value>What's new</value></data>
+  <data name="UpdateAvailable" xml:space="preserve"><value>LocalBell {0} is available.</value></data>
+  <data name="UpdateDownloading" xml:space="preserve"><value>Downloading the update…</value></data>
+  <data name="UpdateStarting" xml:space="preserve"><value>Installing… accept the Windows prompt to continue.</value></data>
+  <data name="UpdateCancelled" xml:space="preserve"><value>The update was not installed.</value></data>
+  <data name="ErrorUpdate" xml:space="preserve"><value>The update failed: {0}</value></data>
+  <data name="ErrorUpdateOffline" xml:space="preserve"><value>GitHub cannot be reached (no Internet connection?).</value></data>
+  <data name="ErrorUpdateRateLimited" xml:space="preserve"><value>GitHub limits the number of checks, try again in a while.</value></data>
+  <data name="ErrorUpdateNoRepository" xml:space="preserve"><value>no version has been published on GitHub yet.</value></data>
+  <data name="ErrorUpdateIntegrity" xml:space="preserve"><value>the downloaded file is damaged, try again.</value></data>
+  <data name="UpdateCheckAtStartup" xml:space="preserve"><value>Check at startup</value></data>
+  <data name="UpdateCheckAtStartupDescription" xml:space="preserve"><value>Asks GitHub for the latest version when LocalBell starts.</value></data>
+  <data name="UpdateChannel" xml:space="preserve"><value>Update channel</value></data>
+  <data name="UpdateChannelDescription" xml:space="preserve"><value>Beta: new features earlier, sometimes less stable.</value></data>
+  <data name="UpdateChannelStable" xml:space="preserve"><value>Stable</value></data>
+  <data name="UpdateChannelBeta" xml:space="preserve"><value>Beta</value></data>
+  <data name="UpdatesByStore" xml:space="preserve"><value>Updates come from the Microsoft Store</value></data>
+  <data name="UpdatesByStoreHint" xml:space="preserve"><value>Version {0} · the Store installs new versions by itself.</value></data>
+  <data name="OpenStore" xml:space="preserve"><value>Open the Store</value></data>
+  <data name="ClassicRemovalText" xml:space="preserve"><value>LocalBell is also installed from GitHub on this PC, and only one can run at a time. Uninstall the GitHub version?
+
+LocalBell closes during the uninstall: start it again from the Start menu.</value></data>
 </root>

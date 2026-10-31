@@ -1,6 +1,8 @@
 ﻿; LocalBell installer (Inno Setup 6), in English and French (picked from the Windows display language).
 ; Built by scripts\build.ps1, which prepares dist\app first:
 ;   ISCC.exe /DAppVersion=1.0.0 installer\LocalBell.iss
+; The app also runs it to install an update (src\LocalBell.App\Services\Updater.cs): silent, closing the running app
+; through the Restart Manager (WPF quits on its WM_QUERYENDSESSION), /RELAUNCH=1.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
@@ -67,9 +69,17 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "..\dist\app\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[Registry]
+; "Start with Windows" is written by the app itself (Settings › General, on by default once installed): removed with it.
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "LocalBell"; Flags: uninsdeletevalue dontcreatekey
+
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
+
+[UninstallDelete]
+; Temporary files of the app: the last update downloaded.
+Type: filesandordirs; Name: "{%TEMP}\LocalBell-Update"
 
 [Run]
 ; The other PCs reach LocalBell on its UDP and TCP ports (53318 and the next ones): one rule for the program, every
@@ -77,11 +87,19 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopico
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""LocalBell"""; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""LocalBell"" dir=in action=allow program=""{app}\{#AppExe}"" enable=yes profile=any"; Flags: runhidden
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent runasoriginaluser
+; Update installed from the app (silent, /RELAUNCH=1): start the app again, as the user, not elevated, near the clock.
+Filename: "{app}\{#AppExe}"; Parameters: "--hidden"; Flags: nowait runasoriginaluser skipifnotsilent; Check: RelaunchRequested
 
 [UninstallRun]
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""LocalBell"""; Flags: runhidden; RunOnceId: "DeleteFirewallRule"
 
 [Code]
+{ Set by the app when it installs an update (Updater.InstallerArguments). }
+function RelaunchRequested: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;
+
 { The app is framework-dependent: it needs the .NET 10 Desktop Runtime. }
 function IsDesktopRuntimeInstalled: Boolean;
 var
@@ -115,11 +133,31 @@ begin
     EnsureDesktopRuntime;
 end;
 
+{ LocalBell runs near the clock: close it before its files are removed. taskkill without /f sends WM_CLOSE to the
+  windows of LocalBell.exe only (the list window hides itself on it, so /f follows for what is left; the others see this
+  PC offline within two minutes). }
+procedure CloseRunningApp;
+var
+  ResultCode: Integer;
+begin
+  if Exec('taskkill.exe', '/im {#AppExe}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
+    Sleep(1500);
+  Exec('taskkill.exe', '/f /im {#AppExe}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function InitializeUninstall: Boolean;
+begin
+  CloseRunningApp;
+  Result := True;
+end;
+
 { Settings (%LOCALAPPDATA%\LocalBell, of the account that uninstalls): kept unless the user says otherwise, "No" being
   the default, so that a reinstall finds them (the same id: the other PCs keep knowing this one). A silent uninstall
-  keeps them. }
+  keeps them. The start with Windows (written by the app, not by Setup) goes too: it would start an exe that is gone. }
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
+  if CurUninstallStep = usUninstall then
+    RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'LocalBell');
   if (CurUninstallStep = usPostUninstall) and not UninstallSilent and
      (MsgBox(CustomMessage('DeleteUserData'), mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES) then
     DelTree(ExpandConstant('{localappdata}\LocalBell'), True, True, True);

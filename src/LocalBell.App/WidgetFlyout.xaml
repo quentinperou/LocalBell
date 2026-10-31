@@ -48,13 +48,26 @@
               <DataTemplate DataType="{x:Type vm:PeerItem}">
                 <Border x:Name="Row" Padding="8,5" CornerRadius="4" Background="Transparent">
                   <DockPanel>
-                    <Button x:Name="RingButton" DockPanel.Dock="Right" Padding="9,5" VerticalAlignment="Center"
-                            AutomationProperties.Name="{Binding RingLabel}" ToolTip="{Binding RingLabel}"
-                            Command="{Binding DataContext.RingCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                            CommandParameter="{Binding}">
-                      <Path Data="{StaticResource BellGeometry}" Width="13" Height="13" Stretch="Uniform"
-                            Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-                    </Button>
+                    <!-- As "Sonner" in the list: the accent colour of Windows, a plain button for a PC in "do not
+                         disturb" (the author found the plain one gave no sign of being clickable, October 31). -->
+                    <Grid x:Name="RingButton" DockPanel.Dock="Right" VerticalAlignment="Center">
+                      <Button Style="{StaticResource AccentButtonStyle}" Padding="9,5"
+                              AutomationProperties.Name="{Binding RingLabel}" ToolTip="{Binding RingLabel}"
+                              Command="{Binding DataContext.RingCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                              CommandParameter="{Binding}"
+                              Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibility}}">
+                        <Path Data="{StaticResource BellGeometry}" Width="13" Height="13" Stretch="Uniform"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                      </Button>
+                      <Button Padding="9,5"
+                              AutomationProperties.Name="{Binding RingLabel}" ToolTip="{Binding RingLabel}"
+                              Command="{Binding DataContext.RingCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                              CommandParameter="{Binding}"
+                              Visibility="{Binding IsDoNotDisturb, Converter={StaticResource BoolToVisibility}}">
+                        <Path Data="{StaticResource BellGeometry}" Width="13" Height="13" Stretch="Uniform"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                      </Button>
+                    </Grid>
                     <Ellipse x:Name="Dot" Width="8" Height="8" Margin="2,0,10,0" VerticalAlignment="Center"
                              Fill="{DynamicResource SystemFillColorSuccessBrush}" />
                     <StackPanel VerticalAlignment="Center">
