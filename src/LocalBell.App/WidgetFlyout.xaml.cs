@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using LocalBell.App.Services;
 using LocalBell.App.ViewModels;
 using static LocalBell.App.Services.NativeMethods;
 using Forms = System.Windows.Forms;
@@ -38,6 +39,7 @@ public partial class WidgetFlyout : Window
     private void ShowAt(int barTop, Func<int, int> leftFor)
     {
         if ((DateTime.Now - hiddenAt).TotalMilliseconds < 300) return;
+        ShowUpdate();
         Left = -10000;
         Top = -10000;
         Show();
@@ -53,6 +55,25 @@ public partial class WidgetFlyout : Window
         SetWindowPos(hwnd, HWND_TOPMOST, left - shadow, barTop - height + shadow - gap, 0, 0, SWP_NOSIZE);
         SetForegroundWindow(hwnd);
         Activate();
+    }
+
+    // A new version, unless its banner was closed in the window or it is installing.
+    private void ShowUpdate()
+    {
+        var release = UpdateBar.Offered;
+        UpdateBanner.Visibility = release is null ? Visibility.Collapsed : Visibility.Visible;
+        if (release is not null) UpdateTitle.Text = Strings.Format("UpdateFlyoutTitle", release.Version);
+    }
+
+    private void UpdateInstall_Click(object sender, RoutedEventArgs e)
+    {
+        HideFlyout();
+        ((App)Application.Current).InstallUpdate();
+    }
+
+    private void UpdateNotes_Click(object sender, RoutedEventArgs e)
+    {
+        if (Updater.Available is { } release) Updater.OpenReleasePage(release);
     }
 
     private void Window_Deactivated(object? sender, EventArgs e) => HideFlyout();

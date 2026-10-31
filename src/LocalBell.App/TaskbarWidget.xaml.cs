@@ -250,6 +250,7 @@ public partial class TaskbarWidget : Window
         if (visible < bar.Height - 4) return false;
 
         double scale = GetDpiForWindow(tray) / 96.0;
+        FitTo(bar.Height / scale); // a new size is laid out next, then placed again (SizeChanged)
         int width = (int)Math.Round(ActualWidth * scale), height = (int)Math.Round(ActualHeight * scale);
         int margin = (int)Math.Round(8 * scale);
         y = bar.Top + (bar.Height - height) / 2;
@@ -288,6 +289,35 @@ public partial class TaskbarWidget : Window
             + $"Start at {startLeft?.ToString() ?? "?"}, {(nearClock ? "near the clock" : "on the left")}, widgets of other apps: "
             + (others.Count == 0 ? "none" : string.Join(" ", others.Select(o => $"[{o.Left}-{o.Right}]")));
         return true;
+    }
+
+    // The height of the taskbar it was last made for, at 96 dpi.
+    private double fittedTo = 48;
+
+    /// <summary>
+    /// The widget at the height of the taskbar: 40 on the usual one (48), smaller on a small one (32: Settings →
+    /// Personalization → Taskbar → size, Windows 11 26H2; it stuck out of it, the author, October 31), 4 px from its
+    /// edges as the taskbar's own buttons.
+    /// </summary>
+    private void FitTo(double barHeight)
+    {
+        if (Math.Abs(barHeight - fittedTo) < 0.5) return;
+        fittedTo = barHeight;
+        bool small = barHeight < 44;
+        Root.Height = small ? Math.Max(barHeight - 8, 20) : 40;
+        BellPart.Width = small ? 32 : 40;
+        BellIcon.Width = BellIcon.Height = small ? 15 : 18;
+        MoonIcon.FontSize = small ? 14 : 17;
+        FavoriteBell.Width = FavoriteBell.Height = small ? 14 : 16;
+        FavoriteMoon.FontSize = small ? 13 : 15;
+        FavoriteName.FontSize = small ? 12 : 13;
+        RingPart.Padding = small ? new Thickness(8, 0, 7, 0) : new Thickness(10, 0, 9, 0);
+        ArrowPart.Padding = small ? new Thickness(6, 0, 7, 0) : new Thickness(8, 0, 9, 0);
+        Divider.Height = small ? 14 : 20;
+        Badge.MinWidth = Badge.Height = small ? 13 : 15;
+        Badge.CornerRadius = new CornerRadius(small ? 6.5 : 7.5);
+        Badge.Margin = small ? new Thickness(0, 0, 1, 0) : new Thickness(0, 2, 2, 0);
+        BadgeText.FontSize = small ? 8.5 : 9.5;
     }
 
     // The widgets of other apps seen on the taskbar, asked again by their handle: while Start is open, Windows lifts the

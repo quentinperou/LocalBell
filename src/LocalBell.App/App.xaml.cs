@@ -305,6 +305,13 @@ public partial class App : Application
         OpenSettings(page);
     }
 
+    /// <summary>"Mettre à jour" in the quick panel or the menu: from the window, whose bar shows the progress.</summary>
+    public void InstallUpdate()
+    {
+        ShowMainWindow();
+        (MainWindow as MainWindow)?.InstallUpdate();
+    }
+
     private void ShowMainWindow()
     {
         if (MainWindow is null) return;
@@ -325,6 +332,12 @@ public partial class App : Application
     /// </summary>
     public IEnumerable<object> TrayMenuItems()
     {
+        // A new version first, in the accent colour (the author's wish: seen without opening Settings).
+        if (Updater.Available is { } release && !Updater.IsInstalling)
+        {
+            yield return PopupMenu.Item(Strings.Format("UpdateMenu", release.Version), "\uE896", InstallUpdate, bold: true, accent: true);
+            yield return new Separator();
+        }
         yield return PopupMenu.BellItem(Strings.Get("TrayOpen"), ShowMainWindow, bold: true);
         yield return new Separator();
         if (viewModel!.IsDoNotDisturb)

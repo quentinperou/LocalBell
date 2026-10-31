@@ -73,9 +73,10 @@ internal static class PopupMenu
     }
 
     /// <summary>An item with a glyph of Segoe Fluent Icons (or none) and what it does.</summary>
-    public static MenuItem Item(string header, string glyph, Action? action, bool bold = false)
+    public static MenuItem Item(string header, string glyph, Action? action, bool bold = false, bool accent = false)
     {
         var item = new MenuItem { Header = header, FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal };
+        if (accent) item.Foreground = AccentText();
         if (glyph.Length > 0)
             item.Icon = new TextBlock
             {
@@ -103,6 +104,15 @@ internal static class PopupMenu
             new System.Windows.Data.Binding("Foreground") { RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.FindAncestor, typeof(MenuItem), 1) });
         item.Icon = bell;
         return item;
+    }
+
+    // The accent colour of Windows in the shade it gives text on its menus: darker on a light one, lighter on a dark one.
+    private static SolidColorBrush AccentText()
+    {
+        var shade = WindowsTheme.TaskbarIsDark ? global::Windows.UI.ViewManagement.UIColorType.AccentLight2
+            : global::Windows.UI.ViewManagement.UIColorType.AccentDark1;
+        var color = new global::Windows.UI.ViewManagement.UISettings().GetColorValue(shade);
+        return new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B));
     }
 
     // The look of Windows 11's menus, in Windows' mode (that of the taskbar), whatever the theme of the app windows.

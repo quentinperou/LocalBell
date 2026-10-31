@@ -45,9 +45,18 @@ public partial class UpdateBar : UserControl
         Visibility = Visibility.Visible;
     }
 
-    private async void Install_Click(object sender, RoutedEventArgs e)
+    /// <summary>The version offered, unless its bar was closed or it is installing: the quick panel shows it too.</summary>
+    public static ReleaseInfo? Offered =>
+        Updater.Available is { } release && release.Version != dismissed && !Updater.IsInstalling ? release : null;
+
+    private void Install_Click(object sender, RoutedEventArgs e) => Install();
+
+    /// <summary>Downloads and installs the new version, its progress on this bar (also from the quick panel and the menu).</summary>
+    public async void Install()
     {
         if (Updater.Available is not { } release || Updater.IsInstalling) return;
+        dismissed = null; // closed earlier, offered again by the menu
+        Visibility = Visibility.Visible;
 
         InstallButton.Visibility = Visibility.Collapsed;
         CloseButton.Visibility = Visibility.Collapsed;

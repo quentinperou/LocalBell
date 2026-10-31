@@ -34,6 +34,9 @@ public partial class MainWindow : Window
         Close();
     }
 
+    /// <summary>"Mettre à jour" in the quick panel or the menu: installed from the bar of this window, which shows the progress.</summary>
+    public void InstallUpdate() => Updates.Install();
+
     private void SettingsButton_Click(object sender, RoutedEventArgs e) => ((App)Application.Current).OpenSettings();
 
     /// <summary>The moon: the lengths of "do not disturb", as in the menu of the bell near the clock.</summary>

@@ -71,7 +71,7 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
 - **Installed on two PCs** (0.1.0, October 31: the shop PC and BUREAU3): they see each other, ring and reply.
 - **0.1.1** (October 31, after his first install): the ring repeated twice by default (was 3), a click on the bell near
   the clock opens the widget's quick panel (or the window, a setting), the music box (a fourth bell, for Halloween).
-- Next: 0.1.1 installed on the two PCs; the list C of the audit.
+- Next: 0.1.1 on BUREAU3 (installed on the shop PC); the list C of the audit.
   Ideas for later: a remembered window place; **keyboard shortcuts to ring each PC** (his idea, October 31: one per
   PC, set in Settings; global shortcuts, so mind the clashes with other apps).
 
@@ -103,6 +103,11 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
 - **A click on the bell near the clock opens the widget's quick panel**, above the bell (the author, October 31, after
   his first install), or the window: Settings → General → "Clic sur l'icône", as ScreenClip's. The right click
   always opens the menu.
+- **A new version shows without opening Settings** (his wish, October 31): the banner over the list, a banner at the
+  top of the quick panel (his choice A among two, `.local\maquettes\maj-*`) and "Mettre à jour vers x.y.z" first in the
+  right-click menu, in the accent colour; the panel and the menu install from the window, whose banner shows the progress.
+- **The widget fits a small taskbar** (Windows 11 26H2 lets it be 32 px; the widget stuck out of it, October 31):
+  smaller bell, button and badge, 4 px from its edges. A vertical taskbar (left or right) hides it.
 - **"Do not disturb" at hand**: right click on the widget or the bell near the clock (30 min, 1 h, until tomorrow,
   until turned back on), the moon beside Settings in the list (accent while on, with a banner), a moon in place of
   the bell on the widget. While on: no sound, no popup, rings kept as missed. Others see a yellow dot and get a toast

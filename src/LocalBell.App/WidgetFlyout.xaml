@@ -19,6 +19,23 @@
     <Border CornerRadius="8" BorderThickness="1" Padding="10"
             BorderBrush="{DynamicResource FlyoutBorderBrush}" Background="{DynamicResource FlyoutBackground}">
       <StackPanel>
+        <!-- A new version (the author's choice A among two, October 31): the banner of the window, made for the panel.
+             Its button installs from the window, whose banner shows the progress. -->
+        <Border x:Name="UpdateBanner" Style="{StaticResource Card}" Margin="0,0,0,8" Padding="10,8" Visibility="Collapsed"
+                Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Style="{StaticResource AccentButtonStyle}" Padding="10,4" FontSize="13"
+                    VerticalAlignment="Center" Content="{local:Tr UpdateInstall}" Click="UpdateInstall_Click" />
+            <TextBlock Style="{StaticResource Glyph}" Text="&#xE896;" FontSize="15" Margin="0,0,10,0" />
+            <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
+              <TextBlock x:Name="UpdateTitle" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+              <TextBlock Style="{StaticResource Secondary}">
+                <Hyperlink Click="UpdateNotes_Click"><Run Text="{local:Tr UpdateWhatsNew}" /></Hyperlink>
+              </TextBlock>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+
         <!-- The missed rings -->
         <ItemsControl ItemsSource="{Binding MissedRings}" Focusable="False">
           <ItemsControl.ItemTemplate>

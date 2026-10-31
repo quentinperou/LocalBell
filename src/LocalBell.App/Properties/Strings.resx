@@ -156,6 +156,8 @@
   <data name="PageUpdates" xml:space="preserve"><value>Updates</value></data>
   <data name="UpdateStatusIdle" xml:space="preserve"><value>Version {0}</value></data>
   <data name="UpdateStatusChecking" xml:space="preserve"><value>Checking for updates…</value></data>
+  <data name="UpdateFlyoutTitle" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="UpdateMenu" xml:space="preserve"><value>Update to {0}</value></data>
   <data name="UpdateUpToDate" xml:space="preserve"><value>LocalBell is up to date.</value></data>
   <data name="UpdateCheckFailed" xml:space="preserve"><value>Could not check for updates: {0}</value></data>
   <data name="UpdateCheck" xml:space="preserve"><value>Check for updates</value></data>

@@ -10,7 +10,7 @@
        through DWM (see TaskbarWidget.xaml.cs), not AllowsTransparency. ThemeMode="None": the Fluent theme of the app
        windows must not paint it; its colours follow the taskbar (Windows' mode). The arrow pointer, as over the
        buttons of the taskbar (the author's wish, October 31): no hand. -->
-  <Grid Height="40" Margin="0,0,0,0">
+  <Grid x:Name="Root" Height="40">
     <!-- The bell alone (no favourite): a click opens the flyout. -->
     <Border x:Name="BellPart" Width="40" CornerRadius="4" Background="Transparent"
             MouseLeftButtonUp="BellPart_Click">

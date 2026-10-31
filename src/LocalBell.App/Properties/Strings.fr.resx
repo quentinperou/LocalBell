@@ -156,6 +156,8 @@
   <data name="PageUpdates" xml:space="preserve"><value>Mises à jour</value></data>
   <data name="UpdateStatusIdle" xml:space="preserve"><value>Version {0}</value></data>
   <data name="UpdateStatusChecking" xml:space="preserve"><value>Recherche de mises à jour…</value></data>
+  <data name="UpdateFlyoutTitle" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="UpdateMenu" xml:space="preserve"><value>Mettre à jour vers {0}</value></data>
   <data name="UpdateUpToDate" xml:space="preserve"><value>LocalBell est à jour.</value></data>
   <data name="UpdateCheckFailed" xml:space="preserve"><value>Impossible de rechercher les mises à jour : {0}</value></data>
   <data name="UpdateCheck" xml:space="preserve"><value>Rechercher des mises à jour</value></data>

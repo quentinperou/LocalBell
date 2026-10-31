@@ -42,7 +42,7 @@
 
             <StackPanel Grid.Row="1">
                 <!-- A newer version on GitHub -->
-                <local:UpdateBar />
+                <local:UpdateBar x:Name="Updates" />
 
                 <!-- "Do not disturb" is on -->
                 <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="12,9"
