@@ -334,6 +334,18 @@
               </StackPanel>
             </DockPanel>
           </Border>
+          <!-- As in ScreenClip: what a click on the bell near the clock opens. -->
+          <Border Style="{StaticResource SettingCard}">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Left" Style="{StaticResource CardIcon}" Text="&#xE962;" />
+              <ComboBox x:Name="TrayClickBox" DockPanel.Dock="Right" Width="260" VerticalAlignment="Center" Margin="16,0,0,0"
+                        SelectionChanged="TrayClickBox_SelectionChanged" AutomationProperties.Name="{local:Tr TrayClickTitle}" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{local:Tr TrayClickTitle}" />
+                <TextBlock Style="{StaticResource CardDescription}" Text="{local:Tr TrayClickHint}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
           <Border Style="{StaticResource SettingCard}">
             <DockPanel>
               <TextBlock DockPanel.Dock="Left" Style="{StaticResource CardIcon}" Text="&#xE708;" />

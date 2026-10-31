@@ -77,6 +77,7 @@
   <data name="SoundCounterBell" xml:space="preserve"><value>Cloche de comptoir</value></data>
   <data name="SoundDoubleDing" xml:space="preserve"><value>Double ding</value></data>
   <data name="SoundChime" xml:space="preserve"><value>Carillon</value></data>
+  <data name="SoundMusicBox" xml:space="preserve"><value>Boîte à musique</value></data>
   <data name="SoundOwn" xml:space="preserve"><value>Mon son : {0}</value></data>
   <data name="PlayTooltip" xml:space="preserve"><value>Écouter</value></data>
   <data name="OwnSoundTitle" xml:space="preserve"><value>Votre propre son</value></data>
@@ -178,6 +179,10 @@
   <data name="UpdatesByStore" xml:space="preserve"><value>Les mises à jour viennent du Microsoft Store</value></data>
   <data name="UpdatesByStoreHint" xml:space="preserve"><value>Version {0} · le Store installe les nouvelles versions tout seul.</value></data>
   <data name="OpenStore" xml:space="preserve"><value>Ouvrir le Store</value></data>
+  <data name="TrayClickTitle" xml:space="preserve"><value>Clic sur l'icône</value></data>
+  <data name="TrayClickHint" xml:space="preserve"><value>La cloche de LocalBell près de l'horloge. Le clic droit ouvre toujours son menu.</value></data>
+  <data name="TrayClickPanel" xml:space="preserve"><value>Ouvrir le panneau rapide</value></data>
+  <data name="TrayClickWindow" xml:space="preserve"><value>Ouvrir LocalBell</value></data>
   <data name="UdpUnavailable" xml:space="preserve"><value>Le port UDP {0} est pris sur ce PC : les autres postes sont trouvés par le balayage et par leur adresse.</value></data>
   <data name="ClassicRemovalText" xml:space="preserve"><value>LocalBell est aussi installé depuis GitHub sur ce PC, et une seule version peut tourner à la fois. Désinstaller celle de GitHub ?
 

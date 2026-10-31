@@ -33,6 +33,16 @@ public enum WidgetPosition
     Hidden,
 }
 
+/// <summary>What a click on the bell near the clock opens (Settings → General; the right click opens the menu).</summary>
+public enum TrayClickAction
+{
+    /// <summary>The quick panel of the widget, above the bell (the author's wish, October 31).</summary>
+    Panel,
+
+    /// <summary>The window of LocalBell, the list of the PCs.</summary>
+    Window,
+}
+
 public enum ScreenCorner
 {
     BottomRight,
@@ -102,8 +112,8 @@ public sealed class AppSettings
     /// <summary>The PC's sound is turned back on while the bell rings (<see cref="WindowsVolume"/>).</summary>
     public bool RingWhenMuted { get; set; } = true;
 
-    /// <summary>How many times the bell rings while the popup waits for an answer.</summary>
-    public int Repeat { get; set; } = 3;
+    /// <summary>How many times the bell rings while the popup waits for an answer: twice by default (the author, October 31).</summary>
+    public int Repeat { get; set; } = 2;
 
     /// <summary>Loud by default (the author's choice, October 31, 2026): a ring must not be missed.</summary>
     public PopupStyle PopupStyle { get; set; } = PopupStyle.Loud;
@@ -112,6 +122,8 @@ public sealed class AppSettings
 
     /// <summary>Where the widget sits on the taskbar, or none (asked by the author when it lay under NowPlaying's).</summary>
     public WidgetPosition Widget { get; set; } = WidgetPosition.Left;
+
+    public TrayClickAction TrayClick { get; set; } = TrayClickAction.Panel;
 
     /// <summary>The popup shows on the main screen, or on the screen of the mouse.</summary>
     public bool PopupOnMouseScreen { get; set; }

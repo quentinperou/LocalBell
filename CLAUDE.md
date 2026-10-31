@@ -18,7 +18,7 @@ paraît plus cohérent"): code, protocol tag and API path, settings folder, inst
 
 ## Project status (October 31, 2026)
 
-Version **0.1.0**, not released. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
+Version **0.1.1**, not released. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
 repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
@@ -68,7 +68,10 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
   only verified PCs kept, rings throttled per address (5, then one every 2 s), replies taken only for rings sent to
   that PC, invisible characters dropped from names, ids `[0-9A-Za-z-]`, IPv4 only, loops that log instead of dying,
   the hand-added addresses asked in parallel. Left for later: the list C of the audit.
-- Next: a build installed on two PCs to try them together.
+- **Installed on two PCs** (0.1.0, October 31: the shop PC and BUREAU3): they see each other, ring and reply.
+- **0.1.1** (October 31, after his first install): the ring repeated twice by default (was 3), a click on the bell near
+  the clock opens the widget's quick panel (or the window, a setting), the music box (a fourth bell, for Halloween).
+- Next: 0.1.1 installed on the two PCs; the list C of the audit.
   Ideas for later: a remembered window place; **keyboard shortcuts to ring each PC** (his idea, October 31: one per
   PC, set in Settings; global shortcuts, so mind the clashes with other apps).
 
@@ -80,7 +83,7 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
   the ready-made messages (pills), "Sonner tout le monde". Tiles were the other option, kept in mind.
 - **Popup: discreet or loud, chosen in Settings, loud by default** (discreet: the size of a Windows notification;
   loud: an orange band, the name large). It never takes the keyboard (not activated), stays above the windows, closes on a reply or its
-  cross (or after a time set in Settings). The bell rings again while it waits (3 times by default).
+  cross (or after a time set in Settings). The bell rings again while it waits (twice by default; 3 until his try of the installed app, October 31).
 - **What happens to a ring shows on the row of the PC rung**, never over the list (his choice C among three): its
   card is outlined, "Ça sonne… · message" (accent), then its reply in green ("J'arrive · 13:53"), or in grey "Vu,
   fermé sans réponse" / "Pas de réponse" (the PC rung tells it: "Ça sonne…" must never stay when it no longer rings),
@@ -93,9 +96,13 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
   is the starred row.
 - **Settings on six pages with a menu on the left** (a seventh, Updates, since October 31, as in his other apps), laid out as NowPlaying's (the icon, "LocalBell" and this PC above
   the menu, the page title at the top of the right column): General (the name of the PC, start with Windows, the
-  place of the widget, do not disturb, language, theme), Ring (sound, own WAV/MP3, volume of its own, ring when Windows is muted,
+  place of the widget, do not disturb, language, theme), Ring (sound: three bells and a music box for Halloween, the day
+  the app was made, the others proposed kept in `.local\sons\`; own WAV/MP3, volume of its own, ring when Windows is muted,
   repeat), Popup (style, corner, screen, closing), Messages (ready-made messages, the three replies), Network (this
   PC's address, PCs added by hand, PCs found, refresh), About.
+- **A click on the bell near the clock opens the widget's quick panel**, above the bell (the author, October 31, after
+  his first install), or the window: Settings → General → "Clic sur l'icône", as ScreenClip's. The right click
+  always opens the menu.
 - **"Do not disturb" at hand**: right click on the widget or the bell near the clock (30 min, 1 h, until tomorrow,
   until turned back on), the moon beside Settings in the list (accent while on, with a banner), a moon in place of
   the bell on the widget. While on: no sound, no popup, rings kept as missed. Others see a yellow dot and get a toast

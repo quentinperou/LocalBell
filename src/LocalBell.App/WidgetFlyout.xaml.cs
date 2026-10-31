@@ -4,6 +4,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using LocalBell.App.ViewModels;
 using static LocalBell.App.Services.NativeMethods;
+using Forms = System.Windows.Forms;
 
 namespace LocalBell.App;
 
@@ -24,9 +25,17 @@ public partial class WidgetFlyout : Window
 
     /// <summary>
     /// Shows it with its left edge on <paramref name="left"/> and its bottom just above <paramref name="barTop"/> (screen
-    /// pixels). A click on the widget that closed it a moment ago (it lost the focus to that click) does not open it again.
+    /// pixels): above the widget. A click on the widget that closed it a moment ago (it lost the focus to that click) does
+    /// not open it again.
     /// </summary>
-    public void ShowAbove(int left, int barTop)
+    public void ShowAbove(int left, int barTop) => ShowAt(barTop, _ => left);
+
+    /// <summary>Shows it centred on <paramref name="x"/> above <paramref name="barTop"/>: above the bell near the clock.</summary>
+    public void ShowNear(int x, int barTop) => ShowAt(barTop, width => x - width / 2);
+
+    // Its place, from its width once shown; kept within the work area of its screen (near the clock, it would go past
+    // the right edge).
+    private void ShowAt(int barTop, Func<int, int> leftFor)
     {
         if ((DateTime.Now - hiddenAt).TotalMilliseconds < 300) return;
         Left = -10000;
@@ -36,7 +45,11 @@ public partial class WidgetFlyout : Window
         var hwnd = new WindowInteropHelper(this).Handle;
         var dpi = VisualTreeHelper.GetDpi(this);
         int shadow = (int)Math.Round(12 * dpi.DpiScaleX), gap = (int)Math.Round(4 * dpi.DpiScaleY);
+        int width = (int)Math.Round(ActualWidth * dpi.DpiScaleX) - 2 * shadow;
         int height = (int)Math.Round(ActualHeight * dpi.DpiScaleY);
+        int left = leftFor(width);
+        var area = Forms.Screen.FromPoint(new System.Drawing.Point(left + width / 2, barTop - 1)).WorkingArea;
+        left = Math.Clamp(left, area.Left + gap, Math.Max(area.Left + gap, area.Right - width - gap));
         SetWindowPos(hwnd, HWND_TOPMOST, left - shadow, barTop - height + shadow - gap, 0, 0, SWP_NOSIZE);
         SetForegroundWindow(hwnd);
         Activate();

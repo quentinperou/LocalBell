@@ -33,8 +33,8 @@ can ring them. No server, no account: the computers talk on the local network on
 ### Being rung
 
 - A popup in a corner of the screen, discreet or loud, that never takes the keyboard from the app in use.
-- The bell rings until someone answers (3 times by default); the replies are one click.
-- A volume of its own, and it rings even when the Windows sound is off; three bells, or your own WAV or MP3.
+- The bell rings until someone answers (twice by default); the replies are one click.
+- A volume of its own, and it rings even when the Windows sound is off; three bells and a music box, or your own WAV or MP3.
 - **Do not disturb** for 30 minutes, an hour, until tomorrow: no sound, no popup, the rings kept to ring back later.
 
 ### In the taskbar

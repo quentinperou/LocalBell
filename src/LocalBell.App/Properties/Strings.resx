@@ -77,6 +77,7 @@
   <data name="SoundCounterBell" xml:space="preserve"><value>Counter bell</value></data>
   <data name="SoundDoubleDing" xml:space="preserve"><value>Double ding</value></data>
   <data name="SoundChime" xml:space="preserve"><value>Chime</value></data>
+  <data name="SoundMusicBox" xml:space="preserve"><value>Music box</value></data>
   <data name="SoundOwn" xml:space="preserve"><value>My sound: {0}</value></data>
   <data name="PlayTooltip" xml:space="preserve"><value>Listen</value></data>
   <data name="OwnSoundTitle" xml:space="preserve"><value>Your own sound</value></data>
@@ -178,6 +179,10 @@
   <data name="UpdatesByStore" xml:space="preserve"><value>Updates come from the Microsoft Store</value></data>
   <data name="UpdatesByStoreHint" xml:space="preserve"><value>Version {0} · the Store installs new versions by itself.</value></data>
   <data name="OpenStore" xml:space="preserve"><value>Open the Store</value></data>
+  <data name="TrayClickTitle" xml:space="preserve"><value>Click on the icon</value></data>
+  <data name="TrayClickHint" xml:space="preserve"><value>The bell of LocalBell near the clock. A right click always opens its menu.</value></data>
+  <data name="TrayClickPanel" xml:space="preserve"><value>Open the quick panel</value></data>
+  <data name="TrayClickWindow" xml:space="preserve"><value>Open LocalBell</value></data>
   <data name="UdpUnavailable" xml:space="preserve"><value>UDP port {0} is taken on this PC: the others are found by the scan and by their address.</value></data>
   <data name="ClassicRemovalText" xml:space="preserve"><value>LocalBell is also installed from GitHub on this PC, and only one can run at a time. Uninstall the GitHub version?
 

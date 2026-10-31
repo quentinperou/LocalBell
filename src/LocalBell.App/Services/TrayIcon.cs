@@ -3,12 +3,15 @@ using Forms = System.Windows.Forms;
 
 namespace LocalBell.App.Services;
 
-/// <summary>The bell near the clock: a click opens the window, a right click the menu (<see cref="PopupMenu"/>).</summary>
+/// <summary>
+/// The bell near the clock: a click does what Settings → General says (the quick panel, or the window), a right click
+/// opens the menu (<see cref="PopupMenu"/>).
+/// </summary>
 public sealed class TrayIcon : IDisposable
 {
     private readonly Forms.NotifyIcon icon;
 
-    public TrayIcon(Action open, Func<IEnumerable<object>> menuItems)
+    public TrayIcon(Action click, Func<IEnumerable<object>> menuItems)
     {
         var stream = Application.GetResourceStream(new Uri("pack://application:,,,/Assets/LocalBell.ico"))!.Stream;
         icon = new Forms.NotifyIcon
@@ -19,7 +22,7 @@ public sealed class TrayIcon : IDisposable
         };
         icon.MouseUp += (_, e) =>
         {
-            if (e.Button == Forms.MouseButtons.Left) open();
+            if (e.Button == Forms.MouseButtons.Left) click();
             else if (e.Button == Forms.MouseButtons.Right) PopupMenu.Show(menuItems());
         };
     }

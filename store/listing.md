@@ -70,7 +70,7 @@ Ready-made messages and one-click replies
 Ring everyone in two clicks
 A popup in the corner of your choice, discreet or loud
 The bell rings until someone answers, even with the sound of Windows off
-Three bells, or your own WAV or MP3 file, at a volume of its own
+Three bells and a music box, or your own WAV or MP3 file, at a volume of its own
 Do not disturb: 30 minutes, an hour, until tomorrow; missed rings kept
 A taskbar widget: your favourite rung in one click
 Finds the other computers by itself, on any network; by address behind a router

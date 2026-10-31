@@ -52,6 +52,9 @@ public partial class SettingsWindow : Window
         WidgetBox.Items.Add(new Option<WidgetPosition>(WidgetPosition.NearClock, Strings.Get("WidgetNearClock")));
         WidgetBox.Items.Add(new Option<WidgetPosition>(WidgetPosition.Hidden, Strings.Get("WidgetHidden")));
         Select(WidgetBox, settings.Widget);
+        TrayClickBox.Items.Add(new Option<TrayClickAction>(TrayClickAction.Panel, Strings.Get("TrayClickPanel")));
+        TrayClickBox.Items.Add(new Option<TrayClickAction>(TrayClickAction.Window, Strings.Get("TrayClickWindow")));
+        Select(TrayClickBox, settings.TrayClick);
         foreach (var (_, key) in DoNotDisturbMenu.Lengths) DndLengthBox.Items.Add(Strings.Get(key));
         DndLengthBox.SelectedIndex = 1;
         DndBox.IsChecked = settings.IsDoNotDisturb;
@@ -72,7 +75,7 @@ public partial class SettingsWindow : Window
         foreach (int count in new[] { 1, 2, 3, 5 })
             RepeatBox.Items.Add(new Option<int>(count, count == 1 ? Strings.Get("RepeatOne") : Strings.Format("RepeatMany", count)));
         Select(RepeatBox, settings.Repeat);
-        if (RepeatBox.SelectedIndex < 0) RepeatBox.SelectedIndex = 2;
+        if (RepeatBox.SelectedIndex < 0) RepeatBox.SelectedIndex = 1; // 2 times, the default
 
         // Popup
         string time = DateTime.Now.ToString("t", CultureInfo.CurrentCulture);
@@ -235,6 +238,13 @@ public partial class SettingsWindow : Window
         settings.Widget = Selected<WidgetPosition>(WidgetBox);
         settings.Save();
         ((App)Application.Current).UpdateWidget();
+    }
+
+    private void TrayClickBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.TrayClick = Selected<TrayClickAction>(TrayClickBox);
+        settings.Save();
     }
 
     private void DndBox_Click(object sender, RoutedEventArgs e)

@@ -33,8 +33,8 @@ les sonner. Pas de serveur, pas de compte : les postes se parlent sur le réseau
 ### Être sonné
 
 - Une popup dans un coin de l'écran, discrète ou voyante, qui ne prend jamais le clavier de l'appli en cours.
-- La cloche sonne jusqu'à une réponse (3 fois par défaut) ; les réponses se font en un clic.
-- Un volume à elle, et elle sonne même quand le son de Windows est coupé ; trois cloches, ou votre propre WAV ou MP3.
+- La cloche sonne jusqu'à une réponse (2 fois par défaut) ; les réponses se font en un clic.
+- Un volume à elle, et elle sonne même quand le son de Windows est coupé ; trois cloches et une boîte à musique, ou votre propre WAV ou MP3.
 - **Ne pas déranger** pendant 30 minutes, une heure, jusqu'à demain : ni son ni popup, les sonneries gardées pour
   rappeler plus tard.
 

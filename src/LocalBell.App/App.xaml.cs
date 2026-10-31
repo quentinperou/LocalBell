@@ -128,7 +128,7 @@ public partial class App : Application
 
         popups = new RingPopups(Settings);
         viewModel = new MainViewModel(Settings, node, popups);
-        tray = new TrayIcon(ShowMainWindow, TrayMenuItems);
+        tray = new TrayIcon(OnTrayClick, TrayMenuItems);
         UpdateTrayTooltip();
         viewModel.DoNotDisturbChanged += (_, _) => UpdateTrayTooltip();
         viewModel.NameChanged += (_, _) => UpdateTrayTooltip();
@@ -206,6 +206,25 @@ public partial class App : Application
         flyout ??= new WidgetFlyout(viewModel!);
         if (flyout.IsVisible) flyout.Hide();
         else flyout.ShowAbove(left, barTop);
+    }
+
+    /// <summary>
+    /// A click on the bell near the clock: the same quick panel as the widget's, above the bell (the author, October 31),
+    /// or the window, as Settings → General says. A click that closes the panel (it loses the focus to that click) does
+    /// not open it again.
+    /// </summary>
+    private void OnTrayClick()
+    {
+        if (Settings.TrayClick == TrayClickAction.Window || viewModel is null)
+        {
+            ShowMainWindow();
+            return;
+        }
+        NativeMethods.GetCursorPos(out var point);
+        int barTop = System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point(point.X, point.Y)).WorkingArea.Bottom;
+        flyout ??= new WidgetFlyout(viewModel);
+        if (flyout.IsVisible) flyout.Hide();
+        else flyout.ShowNear(point.X, barTop);
     }
 
     private static string? ArgumentAfter(string[] args, string name)
