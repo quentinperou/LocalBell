@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LocalBell.App/LocalBell.App.csproj" />
+    <Project Path="src/LocalBell.Core/LocalBell.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LocalBell.Core.Tests/LocalBell.Core.Tests.csproj" />
+  </Folder>
+</Solution>

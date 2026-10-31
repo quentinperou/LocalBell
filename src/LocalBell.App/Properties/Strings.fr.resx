@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve"><value>LocalBell</value></data>
+  <data name="UnexpectedError" xml:space="preserve"><value>Une erreur est survenue : {0}</value></data>
+  <data name="PeersTitle" xml:space="preserve"><value>Postes</value></data>
+  <data name="ThisPc" xml:space="preserve"><value>Ce poste : {0}</value></data>
+  <data name="StatusOnline" xml:space="preserve"><value>En ligne</value></data>
+  <data name="StatusDnd" xml:space="preserve"><value>Ne pas déranger</value></data>
+  <data name="StatusOffline" xml:space="preserve"><value>Hors ligne</value></data>
+  <data name="Ring" xml:space="preserve"><value>Sonner</value></data>
+  <data name="WithMessage" xml:space="preserve"><value>Avec un message</value></data>
+  <data name="MessagePlaceholder" xml:space="preserve"><value>Message (facultatif)</value></data>
+  <data name="RingEveryone" xml:space="preserve"><value>Sonner tout le monde</value></data>
+  <data name="Searching" xml:space="preserve"><value>Recherche des autres postes…</value></data>
+  <data name="SearchingHint" xml:space="preserve"><value>LocalBell doit être lancé sur chacun, sur le même réseau.</value></data>
+  <data name="SettingsTooltip" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="DndTooltip" xml:space="preserve"><value>Ne pas déranger</value></data>
+  <data name="FavoriteTooltip" xml:space="preserve"><value>Favori : sonné en un clic depuis la barre des tâches</value></data>
+  <data name="NobodyOnline" xml:space="preserve"><value>Aucun poste en ligne</value></data>
+  <data name="ReplyTitle" xml:space="preserve"><value>{0} : {1}</value></data>
+  <data name="PopupRings" xml:space="preserve"><value>{0} vous sonne</value></data>
+  <data name="PopupRingsEveryone" xml:space="preserve"><value>{0} sonne tout le monde</value></data>
+  <data name="PopupLoudLine" xml:space="preserve"><value>vous sonne · {0}</value></data>
+  <data name="PopupLoudLineEveryone" xml:space="preserve"><value>sonne tout le monde · {0}</value></data>
+  <data name="CloseTooltip" xml:space="preserve"><value>Fermer</value></data>
+  <data name="DefaultMessage1" xml:space="preserve"><value>Client en caisse</value></data>
+  <data name="DefaultMessage2" xml:space="preserve"><value>Téléphone pour toi</value></data>
+  <data name="DefaultMessage3" xml:space="preserve"><value>Viens voir</value></data>
+  <data name="DefaultMessage4" xml:space="preserve"><value>Livraison</value></data>
+  <data name="DefaultReply1" xml:space="preserve"><value>J'arrive</value></data>
+  <data name="DefaultReply2" xml:space="preserve"><value>2 min</value></data>
+  <data name="DefaultReply3" xml:space="preserve"><value>Occupé</value></data>
+  <data name="DndUntil" xml:space="preserve"><value>Ne pas déranger jusqu'à {0}</value></data>
+  <data name="DndUntilTomorrow" xml:space="preserve"><value>Ne pas déranger jusqu'à demain</value></data>
+  <data name="DndMissedOne" xml:space="preserve"><value>{0} sonnerie manquée</value></data>
+  <data name="DndMissedMany" xml:space="preserve"><value>{0} sonneries manquées</value></data>
+  <data name="DndNoMissed" xml:space="preserve"><value>Aucune sonnerie manquée</value></data>
+  <data name="DndTurnOff" xml:space="preserve"><value>Désactiver</value></data>
+  <data name="Dnd30" xml:space="preserve"><value>Pendant 30 minutes</value></data>
+  <data name="Dnd60" xml:space="preserve"><value>Pendant 1 heure</value></data>
+  <data name="DndTomorrow" xml:space="preserve"><value>Jusqu'à demain</value></data>
+  <data name="DndForever" xml:space="preserve"><value>Jusqu'à ce que je le réactive</value></data>
+  <data name="TrayOpen" xml:space="preserve"><value>Ouvrir LocalBell</value></data>
+  <data name="TrayDndOff" xml:space="preserve"><value>Désactiver Ne pas déranger</value></data>
+  <data name="TrayQuit" xml:space="preserve"><value>Quitter</value></data>
+  <data name="TrayTooltip" xml:space="preserve"><value>LocalBell · {0}</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="PageGeneral" xml:space="preserve"><value>Général</value></data>
+  <data name="PageRing" xml:space="preserve"><value>Sonnerie</value></data>
+  <data name="PagePopup" xml:space="preserve"><value>Popup</value></data>
+  <data name="PageMessages" xml:space="preserve"><value>Messages</value></data>
+  <data name="PageNetwork" xml:space="preserve"><value>Réseau</value></data>
+  <data name="PageAbout" xml:space="preserve"><value>À propos</value></data>
+  <data name="NameTitle" xml:space="preserve"><value>Nom de ce poste</value></data>
+  <data name="NameHint" xml:space="preserve"><value>Le nom que voient les autres postes.</value></data>
+  <data name="StartWithWindows" xml:space="preserve"><value>Démarrer avec Windows</value></data>
+  <data name="DndHint" xml:space="preserve"><value>Ni son ni popup : les sonneries restent dans les manquées.</value></data>
+  <data name="LanguageTitle" xml:space="preserve"><value>Langue</value></data>
+  <data name="LanguageSystem" xml:space="preserve"><value>Langue du système (automatique)</value></data>
+  <data name="ThemeTitle" xml:space="preserve"><value>Thème</value></data>
+  <data name="ThemeSystem" xml:space="preserve"><value>Thème du système (automatique)</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Clair</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Sombre</value></data>
+  <data name="SoundTitle" xml:space="preserve"><value>Sonnerie</value></data>
+  <data name="SoundCounterBell" xml:space="preserve"><value>Cloche de comptoir</value></data>
+  <data name="SoundDoubleDing" xml:space="preserve"><value>Double ding</value></data>
+  <data name="SoundChime" xml:space="preserve"><value>Carillon</value></data>
+  <data name="SoundOwn" xml:space="preserve"><value>Mon son : {0}</value></data>
+  <data name="PlayTooltip" xml:space="preserve"><value>Écouter</value></data>
+  <data name="OwnSoundTitle" xml:space="preserve"><value>Votre propre son</value></data>
+  <data name="OwnSoundHint" xml:space="preserve"><value>Un fichier WAV ou MP3.</value></data>
+  <data name="OwnSoundFilter" xml:space="preserve"><value>Sons (*.wav, *.mp3)|*.wav;*.mp3</value></data>
+  <data name="Browse" xml:space="preserve"><value>Parcourir…</value></data>
+  <data name="VolumeTitle" xml:space="preserve"><value>Volume</value></data>
+  <data name="VolumeHint" xml:space="preserve"><value>Indépendant du volume de Windows.</value></data>
+  <data name="RingWhenMuted" xml:space="preserve"><value>Sonner même si le son de Windows est coupé</value></data>
+  <data name="RepeatTitle" xml:space="preserve"><value>Répéter la sonnerie</value></data>
+  <data name="RepeatOne" xml:space="preserve"><value>Une fois</value></data>
+  <data name="RepeatMany" xml:space="preserve"><value>{0} fois</value></data>
+  <data name="StyleTitle" xml:space="preserve"><value>Style</value></data>
+  <data name="StyleQuiet" xml:space="preserve"><value>Discrète</value></data>
+  <data name="StyleLoud" xml:space="preserve"><value>Voyante</value></data>
+  <data name="CornerTitle" xml:space="preserve"><value>Coin de l'écran</value></data>
+  <data name="ScreenTitle" xml:space="preserve"><value>Écran</value></data>
+  <data name="ScreenPrimary" xml:space="preserve"><value>Écran principal</value></data>
+  <data name="ScreenMouse" xml:space="preserve"><value>Écran de la souris</value></data>
+  <data name="ClosingTitle" xml:space="preserve"><value>Fermeture</value></data>
+  <data name="CloseOnAnswer" xml:space="preserve"><value>À la réponse</value></data>
+  <data name="CloseAfterSeconds" xml:space="preserve"><value>Après {0} s</value></data>
+  <data name="CloseAfterMinutes" xml:space="preserve"><value>Après {0} min</value></data>
+  <data name="PreviewMessage" xml:space="preserve"><value>Client en caisse</value></data>
+  <data name="PreviewName" xml:space="preserve"><value>Atelier</value></data>
+  <data name="MessagesTitle" xml:space="preserve"><value>Messages tout prêts</value></data>
+  <data name="MessagesHint" xml:space="preserve"><value>Proposés sous la liste des postes.</value></data>
+  <data name="RepliesTitle" xml:space="preserve"><value>Réponses</value></data>
+  <data name="RepliesHint" xml:space="preserve"><value>Les boutons de la popup, trois au plus.</value></data>
+  <data name="Add" xml:space="preserve"><value>Ajouter</value></data>
+  <data name="EditTooltip" xml:space="preserve"><value>Modifier</value></data>
+  <data name="DeleteTooltip" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="AddressTitle" xml:space="preserve"><value>Adresse de ce poste</value></data>
+  <data name="AddressHint" xml:space="preserve"><value>À donner à un collègue qui ne vous voit pas.</value></data>
+  <data name="AddressOthers" xml:space="preserve"><value>Aussi : {0}</value></data>
+  <data name="CopyTooltip" xml:space="preserve"><value>Copier</value></data>
+  <data name="ManualTitle" xml:space="preserve"><value>Postes ajoutés à la main</value></data>
+  <data name="ManualHint" xml:space="preserve"><value>Pour un poste que la recherche ne trouve pas.</value></data>
+  <data name="AddByAddress" xml:space="preserve"><value>Ajouter par adresse IP</value></data>
+  <data name="AddressPlaceholder" xml:space="preserve"><value>192.168.1.20 ou NOM-DU-PC</value></data>
+  <data name="AddressFound" xml:space="preserve"><value>Ajouté : {0} y répond.</value></data>
+  <data name="AddressNotFound" xml:space="preserve"><value>Ajouté. Aucun LocalBell n'y répond pour l'instant.</value></data>
+  <data name="AddressInvalid" xml:space="preserve"><value>Ce n'est pas une adresse.</value></data>
+  <data name="FoundOne" xml:space="preserve"><value>{0} poste trouvé</value></data>
+  <data name="FoundMany" xml:space="preserve"><value>{0} postes trouvés</value></data>
+  <data name="FoundNone" xml:space="preserve"><value>Aucun poste trouvé</value></data>
+  <data name="FoundHint" xml:space="preserve"><value>En ligne en ce moment, sur toutes les cartes réseau de ce PC.</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Actualiser</value></data>
+  <data name="AboutVersion" xml:space="preserve"><value>Version {0} · licence MIT</value></data>
+  <data name="AboutCredits" xml:space="preserve"><value>Développé par QuentinPerou, avec Claude Code (Anthropic)</value></data>
+  <data name="SourceCode" xml:space="preserve"><value>Code source sur GitHub</value></data>
+  <data name="NoteRinging" xml:space="preserve"><value>Ça sonne…</value></data>
+  <data name="NoteQuiet" xml:space="preserve"><value>Ne sera pas dérangé · gardée en manquée</value></data>
+  <data name="NoteFailed" xml:space="preserve"><value>Ne répond pas : LocalBell y est-il lancé ?</value></data>
+  <data name="NoteReply" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="ConfirmEveryoneOne" xml:space="preserve"><value>Cliquez encore : sonner {0} poste</value></data>
+  <data name="ConfirmEveryoneMany" xml:space="preserve"><value>Cliquez encore : sonner {0} postes</value></data>
+  <data name="RingName" xml:space="preserve"><value>Sonner {0}</value></data>
+  <data name="NoteClosed" xml:space="preserve"><value>Vu, fermé sans réponse · {0}</value></data>
+  <data name="NoteUnanswered" xml:space="preserve"><value>Pas de réponse · {0}</value></data>
+  <data name="MissedLine" xml:space="preserve"><value>{0} vous a sonné · {1}</value></data>
+  <data name="RingBack" xml:space="preserve"><value>Rappeler</value></data>
+  <data name="WidgetTitle" xml:space="preserve"><value>Widget de la barre des tâches</value></data>
+  <data name="WidgetHint" xml:space="preserve"><value>Il se décale pour les widgets des autres applis.</value></data>
+  <data name="WidgetLeft" xml:space="preserve"><value>À gauche, après la météo</value></data>
+  <data name="WidgetNearClock" xml:space="preserve"><value>Près de l'horloge</value></data>
+  <data name="WidgetHidden" xml:space="preserve"><value>Masqué</value></data>
+  <data name="DeveloperMode" xml:space="preserve"><value>Mode développeur</value></data>
+  <data name="DeveloperModeDescription" xml:space="preserve"><value>Un journal note ce que fait LocalBell : les postes trouvés ou partis, les sonneries et les réponses, la place du widget (jamais le texte des messages).</value></data>
+  <data name="DeveloperLog" xml:space="preserve"><value>Le journal</value></data>
+  <data name="DeveloperLogDescription" xml:space="preserve"><value>À envoyer quand quelque chose ne marche pas.</value></data>
+  <data name="DeveloperLogOpen" xml:space="preserve"><value>Ouvrir le journal</value></data>
+</root>

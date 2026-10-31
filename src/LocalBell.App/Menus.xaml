@@ -1,0 +1,104 @@
+<!--
+  The menus of the bell near the clock and of the taskbar widget, drawn as those of the Windows 11 taskbar, in the mode
+  of Windows (light or dark, as the taskbar): PopupMenu sets the Menu* brushes. NowPlaying's, with sub-menus ("Ne pas
+  déranger ›"). The Fluent ContextMenu of WPF showed through, without its separators (the author, October 31, 2026).
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- The menu (and a sub-menu, below): a rounded surface, its shadow on a shape of its own (an effect on the content
+       would blur its text), a margin of 12 for that shadow (PopupMenu offsets the menu by as much). -->
+  <Style x:Key="WindowsMenu" TargetType="ContextMenu">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="HasDropShadow" Value="False" />
+    <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource MenuText}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ContextMenu">
+          <Grid Margin="12">
+            <Border Background="{DynamicResource MenuSurface}" CornerRadius="8">
+              <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.2" Color="Black" />
+              </Border.Effect>
+            </Border>
+            <Border Background="{DynamicResource MenuSurface}" BorderBrush="{DynamicResource MenuStroke}" BorderThickness="1"
+                    CornerRadius="8" Padding="4,3">
+              <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+            </Border>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- An item: icon, text, and the arrow of a sub-menu, which opens on its right. -->
+  <Style TargetType="MenuItem">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    <Setter Property="Foreground" Value="{DynamicResource MenuText}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="MenuItem">
+          <Grid>
+            <Border x:Name="Back" Background="Transparent" CornerRadius="4" MinHeight="34" Margin="0,1" Padding="10,0,10,0"
+                    SnapsToDevicePixels="True">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="30" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ContentPresenter ContentSource="Icon" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <ContentPresenter Grid.Column="1" ContentSource="Header" RecognizesAccessKey="False" VerticalAlignment="Center" />
+                <TextBlock x:Name="Arrow" Grid.Column="2" Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                           FontSize="10" Margin="24,0,0,0" VerticalAlignment="Center" Visibility="Collapsed" />
+              </Grid>
+            </Border>
+            <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="-8" VerticalOffset="-16" AllowsTransparency="True"
+                   Focusable="False" PopupAnimation="None"
+                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
+              <Grid Margin="12" MinWidth="220">
+                <Border Background="{DynamicResource MenuSurface}" CornerRadius="8">
+                  <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.2" Color="Black" />
+                  </Border.Effect>
+                </Border>
+                <Border Background="{DynamicResource MenuSurface}" BorderBrush="{DynamicResource MenuStroke}" BorderThickness="1"
+                        CornerRadius="8" Padding="4,3">
+                  <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                </Border>
+              </Grid>
+            </Popup>
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="Role" Value="SubmenuHeader">
+              <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsHighlighted" Value="True">
+              <Setter TargetName="Back" Property="Background" Value="{DynamicResource MenuHover}" />
+            </Trigger>
+            <Trigger Property="IsSubmenuOpen" Value="True">
+              <Setter TargetName="Back" Property="Background" Value="{DynamicResource MenuHover}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Foreground" Value="{DynamicResource MenuTextDisabled}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Separator">
+          <Border Height="1" Margin="-4,4" Background="{DynamicResource MenuDivider}" />
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+</ResourceDictionary>

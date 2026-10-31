@@ -1,0 +1,15 @@
+<Window x:Class="LocalBell.App.RingPopup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:LocalBell.App"
+        Title="{local:Tr AppTitle}" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False" ShowActivated="False" SizeToContent="WidthAndHeight">
+
+    <!-- A margin around the card, for its shadow. -->
+    <Grid Margin="16">
+        <Grid.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="5" Direction="270" Opacity="0.45" />
+        </Grid.Effect>
+        <local:RingCard x:Name="Card" />
+    </Grid>
+</Window>

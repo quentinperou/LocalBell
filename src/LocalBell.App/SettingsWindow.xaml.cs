@@ -1,0 +1,498 @@
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Navigation;
+using LocalBell.App.Services;
+using LocalBell.App.ViewModels;
+using LocalBell.Core;
+using LocalBell.Core.Network;
+using Microsoft.Win32;
+
+namespace LocalBell.App;
+
+/// <summary>
+/// Settings, on six pages. Each change applies at once and is saved (no OK button, as in Windows 11); the name of the
+/// PC when its box is left or Enter is pressed.
+/// </summary>
+public partial class SettingsWindow : Window
+{
+    private readonly AppSettings settings = App.Settings;
+    private readonly MainViewModel viewModel;
+    private readonly BellNode node;
+    private readonly string? profile;
+    private readonly ScrollViewer[] pages;
+    private readonly ObservableCollection<EditableText> messages;
+    private readonly ObservableCollection<EditableText> replies;
+    private readonly ObservableCollection<string> addresses;
+    private readonly bool initialized;
+
+    public SettingsWindow(MainViewModel viewModel, BellNode node, string? profile, int page = 0)
+    {
+        InitializeComponent();
+        MicaBackdrop.Apply(this);
+        this.viewModel = viewModel;
+        this.node = node;
+        this.profile = profile;
+        pages = [GeneralPage, RingPage, PopupPage, MessagesPage, NetworkPage, AboutPage];
+        // The pages scroll rather than the window going past the screen.
+        MaxHeight = SystemParameters.WorkArea.Height;
+
+        // General
+        NameBox.Text = node.Name;
+        ThisPcText.Text = Strings.Format("ThisPc", node.Name);
+        StartupBox.IsChecked = settings.StartWithWindows;
+        WidgetBox.Items.Add(new Option<WidgetPosition>(WidgetPosition.Left, Strings.Get("WidgetLeft")));
+        WidgetBox.Items.Add(new Option<WidgetPosition>(WidgetPosition.NearClock, Strings.Get("WidgetNearClock")));
+        WidgetBox.Items.Add(new Option<WidgetPosition>(WidgetPosition.Hidden, Strings.Get("WidgetHidden")));
+        Select(WidgetBox, settings.Widget);
+        foreach (var (_, key) in DoNotDisturbMenu.Lengths) DndLengthBox.Items.Add(Strings.Get(key));
+        DndLengthBox.SelectedIndex = 1;
+        DndBox.IsChecked = settings.IsDoNotDisturb;
+        viewModel.DoNotDisturbChanged += OnDoNotDisturbChanged;
+        LanguageBox.Items.Add(new Option<string>(AppSettings.SystemLanguage, Strings.Get("LanguageSystem")));
+        foreach (string code in AppSettings.SupportedLanguages) LanguageBox.Items.Add(new Option<string>(code, NativeName(code)));
+        Select(LanguageBox, settings.Language);
+        ThemeBox.Items.Add(new Option<AppTheme>(AppTheme.System, Strings.Get("ThemeSystem")));
+        ThemeBox.Items.Add(new Option<AppTheme>(AppTheme.Light, Strings.Get("ThemeLight")));
+        ThemeBox.Items.Add(new Option<AppTheme>(AppTheme.Dark, Strings.Get("ThemeDark")));
+        Select(ThemeBox, settings.Theme);
+
+        // Ring
+        FillSounds();
+        VolumeSlider.Value = settings.Volume;
+        VolumeText.Text = $"{settings.Volume} %";
+        MutedBox.IsChecked = settings.RingWhenMuted;
+        foreach (int count in new[] { 1, 2, 3, 5 })
+            RepeatBox.Items.Add(new Option<int>(count, count == 1 ? Strings.Get("RepeatOne") : Strings.Format("RepeatMany", count)));
+        Select(RepeatBox, settings.Repeat);
+        if (RepeatBox.SelectedIndex < 0) RepeatBox.SelectedIndex = 2;
+
+        // Popup
+        string time = DateTime.Now.ToString("t", CultureInfo.CurrentCulture);
+        var previewReplies = settings.Replies.Take(3).ToList();
+        QuietPreview.Show(PopupStyle.Quiet, Strings.Get("PreviewName"), Strings.Get("PreviewMessage"), false, time, previewReplies);
+        LoudPreview.Show(PopupStyle.Loud, Strings.Get("PreviewName"), Strings.Get("PreviewMessage"), false, time, previewReplies);
+        (settings.PopupStyle == PopupStyle.Loud ? LoudRadio : QuietRadio).IsChecked = true;
+        CornerButton(settings.Corner).IsChecked = true;
+        ScreenBox.Items.Add(new Option<bool>(false, Strings.Get("ScreenPrimary")));
+        ScreenBox.Items.Add(new Option<bool>(true, Strings.Get("ScreenMouse")));
+        Select(ScreenBox, settings.PopupOnMouseScreen);
+        CloseBox.Items.Add(new Option<int>(0, Strings.Get("CloseOnAnswer")));
+        CloseBox.Items.Add(new Option<int>(30, Strings.Format("CloseAfterSeconds", 30)));
+        CloseBox.Items.Add(new Option<int>(60, Strings.Format("CloseAfterMinutes", 1)));
+        CloseBox.Items.Add(new Option<int>(300, Strings.Format("CloseAfterMinutes", 5)));
+        Select(CloseBox, settings.CloseAfterSeconds);
+        if (CloseBox.SelectedIndex < 0) CloseBox.SelectedIndex = 0;
+
+        // Messages
+        messages = [.. settings.Messages.Select(m => new EditableText(m))];
+        replies = [.. settings.Replies.Select(r => new EditableText(r))];
+        MessagesList.ItemsSource = messages;
+        RepliesList.ItemsSource = replies;
+        AddReplyButton.IsEnabled = replies.Count < 3;
+
+        // Network
+        var shared = LocalNetwork.AddressesToShare();
+        AddressText.Text = shared.Count > 0 ? shared[0].ToString() : "—";
+        OtherAddressesText.Text = shared.Count > 1 ? Strings.Format("AddressOthers", string.Join(" · ", shared.Skip(1))) : "";
+        OtherAddressesText.Visibility = shared.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        addresses = [.. settings.Addresses];
+        AddressesList.ItemsSource = addresses;
+        ShowFound();
+        node.PeersChanged += OnPeersChanged;
+
+        // About
+        VersionText.Text = Strings.Format("AboutVersion", App.Version);
+        DeveloperModeBox.IsChecked = settings.DeveloperMode;
+        OpenLogButton.IsEnabled = settings.DeveloperMode;
+
+        PageList.SelectedIndex = page;
+        initialized = true;
+    }
+
+    /// <summary>The page shown, kept when the window is built again for another language.</summary>
+    public int Page => PageList.SelectedIndex;
+
+    private sealed record Option<T>(T Value, string Text)
+    {
+        public override string ToString() => Text;
+    }
+
+    private static void Select<T>(ComboBox box, T value) =>
+        box.SelectedItem = box.Items.OfType<Option<T>>().FirstOrDefault(o => EqualityComparer<T>.Default.Equals(o.Value, value));
+
+    private static T? Selected<T>(ComboBox box) => box.SelectedItem is Option<T> option ? option.Value : default;
+
+    // Languages are listed in their own language ("English", "Français"), whatever the current UI language.
+    private static string NativeName(string code)
+    {
+        var culture = CultureInfo.GetCultureInfo(code);
+        return culture.TextInfo.ToUpper(culture.NativeName[0]) + culture.NativeName[1..];
+    }
+
+    // The page chosen in the menu; the others stay in place, hidden, so that the window keeps its height.
+    private void PageList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (pages is null) return; // the first page is chosen while the window is built
+        for (int i = 0; i < pages.Length; i++)
+            pages[i].Visibility = i == PageList.SelectedIndex ? Visibility.Visible : Visibility.Hidden;
+    }
+
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && Keyboard.FocusedElement is not TextBox) Close();
+    }
+
+    private void Window_Closed(object? sender, EventArgs e)
+    {
+        viewModel.DoNotDisturbChanged -= OnDoNotDisturbChanged;
+        node.PeersChanged -= OnPeersChanged;
+        CommitName();
+        settings.Save();
+    }
+
+    // ---- General ----
+
+    private void NameBox_LostFocus(object sender, RoutedEventArgs e) => CommitName();
+
+    private void NameBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) CommitName();
+        else if (e.Key == Key.Escape)
+        {
+            NameBox.Text = node.Name;
+            e.Handled = true;
+        }
+    }
+
+    private void CommitName()
+    {
+        string name = NameBox.Text.Trim();
+        if (name.Length == 0 || name == node.Name)
+        {
+            NameBox.Text = node.Name;
+            return;
+        }
+        viewModel.Rename(name);
+        NameBox.Text = node.Name;
+        ThisPcText.Text = Strings.Format("ThisPc", node.Name);
+    }
+
+    private void StartupBox_Click(object sender, RoutedEventArgs e)
+    {
+        settings.StartWithWindows = StartupBox.IsChecked == true;
+        settings.Save();
+        WindowsStartup.Apply(settings.StartWithWindows, profile);
+    }
+
+    private void WidgetBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.Widget = Selected<WidgetPosition>(WidgetBox);
+        settings.Save();
+        ((App)Application.Current).PlaceWidget();
+    }
+
+    private void DndBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (DndBox.IsChecked == true)
+            viewModel.TurnOnDoNotDisturb(DoNotDisturbMenu.Lengths[Math.Max(0, DndLengthBox.SelectedIndex)].Length);
+        else
+            viewModel.TurnOffDoNotDisturb();
+    }
+
+    private void OnDoNotDisturbChanged(object? sender, EventArgs e) => DndBox.IsChecked = settings.IsDoNotDisturb;
+
+    private void LanguageBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized || Selected<string>(LanguageBox) is not { } language || language == settings.Language) return;
+        settings.Language = language;
+        settings.Save();
+        // Texts are read when a window is built: the windows are built again in the new language.
+        Dispatcher.BeginInvoke(() => ((App)Application.Current).ReloadLanguage(this));
+    }
+
+    private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.Theme = Selected<AppTheme>(ThemeBox);
+        settings.Save();
+        App.ApplyTheme(settings.Theme);
+    }
+
+    // ---- Ring ----
+
+    private void FillSounds()
+    {
+        SoundBox.Items.Clear();
+        foreach (var (sound, key) in BellSound.BuiltIn) SoundBox.Items.Add(new Option<string>(sound, Strings.Get(key)));
+        if (File.Exists(settings.SoundFile))
+            SoundBox.Items.Add(new Option<string>(BellSound.OwnFile, Strings.Format("SoundOwn", Path.GetFileName(settings.SoundFile))));
+        Select(SoundBox, settings.Sound);
+        if (SoundBox.SelectedIndex < 0) SoundBox.SelectedIndex = 0;
+        OwnSoundText.Text = File.Exists(settings.SoundFile) ? settings.SoundFile : Strings.Get("OwnSoundHint");
+    }
+
+    private void SoundBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized || Selected<string>(SoundBox) is not { } sound) return;
+        settings.Sound = sound;
+        settings.Save();
+    }
+
+    private void Play_Click(object sender, RoutedEventArgs e) => BellSound.Play(settings.Sound, settings.SoundFile, settings.Volume);
+
+    private void Browse_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog { Filter = Strings.Get("OwnSoundFilter") };
+        if (File.Exists(settings.SoundFile)) dialog.InitialDirectory = Path.GetDirectoryName(settings.SoundFile);
+        if (dialog.ShowDialog(this) != true) return;
+        settings.SoundFile = dialog.FileName;
+        settings.Sound = BellSound.OwnFile;
+        settings.Save();
+        FillSounds();
+        BellSound.Play(settings.Sound, settings.SoundFile, settings.Volume);
+    }
+
+    private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!initialized) return;
+        settings.Volume = (int)Math.Round(VolumeSlider.Value);
+        VolumeText.Text = $"{settings.Volume} %";
+    }
+
+    private void MutedBox_Click(object sender, RoutedEventArgs e)
+    {
+        settings.RingWhenMuted = MutedBox.IsChecked == true;
+        settings.Save();
+    }
+
+    private void RepeatBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.Repeat = Selected<int>(RepeatBox);
+        settings.Save();
+    }
+
+    // ---- Popup ----
+
+    private void QuietOption_Click(object sender, MouseButtonEventArgs e) => QuietRadio.IsChecked = true;
+
+    private void LoudOption_Click(object sender, MouseButtonEventArgs e) => LoudRadio.IsChecked = true;
+
+    private void StyleRadio_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.PopupStyle = LoudRadio.IsChecked == true ? PopupStyle.Loud : PopupStyle.Quiet;
+        settings.Save();
+    }
+
+    private RadioButton CornerButton(ScreenCorner corner) => corner switch
+    {
+        ScreenCorner.TopLeft => TopLeftCorner,
+        ScreenCorner.TopRight => TopRightCorner,
+        ScreenCorner.BottomLeft => BottomLeftCorner,
+        _ => BottomRightCorner,
+    };
+
+    private void Corner_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.Corner = Enum.GetValues<ScreenCorner>().First(c => CornerButton(c) == sender);
+        settings.Save();
+    }
+
+    private void ScreenBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.PopupOnMouseScreen = Selected<bool>(ScreenBox);
+        settings.Save();
+    }
+
+    private void CloseBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.CloseAfterSeconds = Selected<int>(CloseBox);
+        settings.Save();
+    }
+
+    // ---- Messages ----
+
+    private void AddMessage_Click(object sender, RoutedEventArgs e) => messages.Add(new EditableText("") { IsEditing = true });
+
+    private void AddReply_Click(object sender, RoutedEventArgs e)
+    {
+        if (replies.Count < 3) replies.Add(new EditableText("") { IsEditing = true });
+        AddReplyButton.IsEnabled = replies.Count < 3;
+    }
+
+    private static EditableText? RowOf(object sender) => (sender as FrameworkElement)?.DataContext as EditableText;
+
+    private void EditText_Click(object sender, RoutedEventArgs e)
+    {
+        if (RowOf(sender) is not { } row) return;
+        row.Before = row.Text;
+        row.IsEditing = true;
+    }
+
+    private void DeleteText_Click(object sender, RoutedEventArgs e)
+    {
+        if (RowOf(sender) is not { } row) return;
+        messages.Remove(row);
+        replies.Remove(row);
+        SaveTexts();
+    }
+
+    private void EditBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is not true || sender is not TextBox box) return;
+        box.Dispatcher.BeginInvoke(() =>
+        {
+            box.Focus();
+            box.SelectAll();
+        });
+    }
+
+    private void EditBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (RowOf(sender) is { IsEditing: true } row) EndEdit(row);
+    }
+
+    private void EditBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (RowOf(sender) is not { } row) return;
+        if (e.Key == Key.Enter) EndEdit(row);
+        else if (e.Key == Key.Escape)
+        {
+            row.Text = row.Before;
+            EndEdit(row);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>The edit ends: an empty text removes its row.</summary>
+    private void EndEdit(EditableText row)
+    {
+        row.IsEditing = false;
+        row.Text = row.Text.Trim();
+        if (row.Text.Length == 0)
+        {
+            messages.Remove(row);
+            replies.Remove(row);
+        }
+        SaveTexts();
+    }
+
+    private void SaveTexts()
+    {
+        settings.Messages = messages.Where(m => !m.IsEditing && m.Text.Length > 0).Select(m => m.Text).ToList();
+        settings.Replies = replies.Where(r => !r.IsEditing && r.Text.Length > 0).Select(r => r.Text).Take(3).ToList();
+        settings.Save();
+        AddReplyButton.IsEnabled = replies.Count < 3;
+        viewModel.ReloadMessages();
+        string time = DateTime.Now.ToString("t", CultureInfo.CurrentCulture);
+        QuietPreview.Show(PopupStyle.Quiet, Strings.Get("PreviewName"), Strings.Get("PreviewMessage"), false, time, settings.Replies);
+        LoudPreview.Show(PopupStyle.Loud, Strings.Get("PreviewName"), Strings.Get("PreviewMessage"), false, time, settings.Replies);
+    }
+
+    // ---- Network ----
+
+    private void CopyAddress_Click(object sender, RoutedEventArgs e)
+    {
+        try { Clipboard.SetText(AddressText.Text); }
+        catch (System.Runtime.InteropServices.COMException) { } // the clipboard is held by another app
+    }
+
+    private void ShowAddAddress_Click(object sender, RoutedEventArgs e)
+    {
+        AddAddressRow.Visibility = Visibility.Visible;
+        AddressBox.Focus();
+    }
+
+    private void AddressBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) AddAddress_Click(sender, e);
+    }
+
+    /// <summary>A PC added by hand: kept even when nobody answers yet (it may be off), the answer said under the box.</summary>
+    private async void AddAddress_Click(object sender, RoutedEventArgs e)
+    {
+        string text = AddressBox.Text.Trim();
+        AddAddressResult.Visibility = Visibility.Visible;
+        if (BellNode.ParseAddress(text) is null)
+        {
+            AddAddressResult.Text = Strings.Get("AddressInvalid");
+            return;
+        }
+        AddAddressButton.IsEnabled = false;
+        var found = await node.ProbeAsync(text);
+        AddAddressButton.IsEnabled = true;
+        if (!addresses.Contains(text, StringComparer.OrdinalIgnoreCase)) addresses.Add(text);
+        settings.Addresses = [.. addresses];
+        settings.Save();
+        node.SetAddresses(settings.Addresses);
+        AddAddressResult.Text = found is null ? Strings.Get("AddressNotFound") : Strings.Format("AddressFound", found.Name);
+        AddressBox.Text = "";
+    }
+
+    private void DeleteAddress_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not string address) return;
+        addresses.Remove(address);
+        settings.Addresses = [.. addresses];
+        settings.Save();
+        node.SetAddresses(settings.Addresses);
+    }
+
+    private void OnPeersChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(ShowFound);
+
+    private void ShowFound()
+    {
+        int online = node.Peers.Count(p => p.Online);
+        FoundText.Text = online == 0 ? Strings.Get("FoundNone") : Strings.Count("Found", online);
+    }
+
+    private async void Refresh_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshButton.IsEnabled = false;
+        FoundText.Text = Strings.Get("Searching");
+        try { await node.RefreshAsync(); }
+        catch (OperationCanceledException) { }
+        RefreshButton.IsEnabled = true;
+        ShowFound();
+    }
+
+    // ---- About ----
+
+    private void DeveloperMode_Click(object sender, RoutedEventArgs e)
+    {
+        bool on = DeveloperModeBox.IsChecked == true;
+        if (!on) DevLog.Write("Developer mode off");
+        settings.DeveloperMode = DevLog.Enabled = on;
+        settings.Save();
+        OpenLogButton.IsEnabled = on;
+        if (on) DevLog.Write($"Developer mode on: LocalBell {App.Version}, this computer \"{node.Name}\" ({settings.Id[..8]}), TCP {node.Port}"
+            + $", {node.Peers.Count(p => p.Online)} computer(s) online");
+    }
+
+    // The log in the app that opens text files (Notepad), created empty if there is none yet.
+    private void OpenLog_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(DevLog.FilePath)!);
+            if (!File.Exists(DevLog.FilePath)) File.WriteAllText(DevLog.FilePath, "");
+            Process.Start(new ProcessStartInfo(DevLog.FilePath) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception) { }
+    }
+
+    private void Link_RequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
+}

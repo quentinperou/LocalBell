@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- Only for the bell near the clock (NotifyIcon): WPF has none. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>LocalBell</AssemblyName>
+    <RootNamespace>LocalBell.App</RootNamespace>
+    <ApplicationIcon>Assets\LocalBell.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>LocalBell</Product>
+    <SatelliteResourceLanguages>fr</SatelliteResourceLanguages>
+    <!-- Application.ThemeMode (light/dark Fluent theme) is still marked experimental in WPF .NET 10.
+         WFO0003 asks a Windows Forms app to set its DPI mode in code: this is a WPF app, the manifest sets it. -->
+    <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\LocalBell.ico" />
+    <Resource Include="Assets\LocalBell.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- WPF projects do not import System.IO implicitly. -->
+    <Using Include="System.IO" />
+    <!-- Windows Forms is there for the NotifyIcon only: its names (Application, MessageBox...) would clash with WPF's. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LocalBell.Core\LocalBell.Core.csproj" />
+  </ItemGroup>
+
+</Project>

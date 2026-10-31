@@ -1,0 +1,244 @@
+<Window x:Class="LocalBell.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:LocalBell.App"
+        xmlns:vm="clr-namespace:LocalBell.App.ViewModels"
+        Title="{local:Tr AppTitle}" Icon="Assets/LocalBell.ico"
+        Width="420" Height="660" MinWidth="340" MinHeight="420" WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="14"
+        Foreground="{DynamicResource TextFillColorPrimaryBrush}" Background="{DynamicResource ApplicationBackgroundBrush}"
+        Closing="Window_Closing">
+
+    <Grid>
+        <Grid Margin="16,8,16,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header: the title, this PC, "do not disturb" -->
+            <DockPanel Margin="0,0,0,12">
+                <Button DockPanel.Dock="Right" Style="{StaticResource SquareButton}" Margin="6,0,0,0" ToolTip="{local:Tr SettingsTooltip}" AutomationProperties.Name="{local:Tr SettingsTooltip}"
+                        Click="SettingsButton_Click">
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE713;" FontSize="14" />
+                </Button>
+                <Grid DockPanel.Dock="Right">
+                    <Button x:Name="MoonButton" Style="{StaticResource SquareButton}" ToolTip="{local:Tr DndTooltip}" AutomationProperties.Name="{local:Tr DndTooltip}" Click="MoonButton_Click">
+                        <TextBlock Style="{StaticResource Glyph}" Text="&#xE708;" FontSize="14" />
+                    </Button>
+                    <Button Style="{StaticResource SquareAccentButton}" ToolTip="{local:Tr DndTooltip}" AutomationProperties.Name="{local:Tr DndTooltip}"
+                            Command="{Binding DoNotDisturbOffCommand}"
+                            Visibility="{Binding IsDoNotDisturb, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Style="{StaticResource Glyph}" Text="&#xE708;" FontSize="14" />
+                    </Button>
+                </Grid>
+                <StackPanel>
+                    <TextBlock Text="{local:Tr PeersTitle}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource Secondary}" Text="{Binding ThisPcText}" />
+                </StackPanel>
+            </DockPanel>
+
+            <!-- "Do not disturb" is on -->
+            <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,10" Padding="12,9"
+                    Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
+                    Visibility="{Binding IsDoNotDisturb, Converter={StaticResource BoolToVisibility}}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource SubtleButton}" Command="{Binding DoNotDisturbOffCommand}"
+                            Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
+                        <TextBlock Text="{local:Tr DndTurnOff}" FontSize="13" />
+                    </Button>
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE708;" FontSize="16" Margin="0,0,12,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding DoNotDisturbTitle}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Style="{StaticResource Secondary}" Text="{Binding DoNotDisturbDetail}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- The PCs -->
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,-8,0" Padding="0,0,8,0">
+                <ItemsControl ItemsSource="{Binding Peers}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:PeerItem}">
+                            <Border x:Name="Row" Style="{StaticResource Card}" Padding="14,10">
+                                <DockPanel>
+                                    <Grid DockPanel.Dock="Right">
+                                        <Button Style="{StaticResource AccentButtonStyle}" Padding="12,5" VerticalAlignment="Center" AutomationProperties.Name="{Binding RingLabel}"
+                                                Command="{Binding DataContext.RingCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibility}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Data="{StaticResource BellGeometry}" Width="13" Height="13" Stretch="Uniform"
+                                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                                <TextBlock Text="{local:Tr Ring}" Margin="7,0,0,0" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Padding="12,5" VerticalAlignment="Center" AutomationProperties.Name="{Binding RingLabel}"
+                                                Command="{Binding DataContext.RingCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Visibility="{Binding IsDoNotDisturb, Converter={StaticResource BoolToVisibility}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Data="{StaticResource BellGeometry}" Width="13" Height="13" Stretch="Uniform"
+                                                      Fill="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                <TextBlock Text="{local:Tr Ring}" Margin="7,0,0,0" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource SubtleButton}" Margin="0,0,8,0"
+                                            ToolTip="{local:Tr FavoriteTooltip}" AutomationProperties.Name="{local:Tr FavoriteTooltip}"
+                                            Command="{Binding DataContext.FavoriteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock x:Name="Star" Style="{StaticResource Glyph}" Text="&#xE734;" FontSize="16"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    </Button>
+                                    <Ellipse x:Name="Dot" Width="8" Height="8" Margin="2,0,12,0" VerticalAlignment="Center"
+                                             Fill="{DynamicResource SystemFillColorSuccessBrush}" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        <Grid>
+                                            <TextBlock Style="{StaticResource Secondary}" Text="{Binding StatusText}"
+                                                       Visibility="{Binding HasNote, Converter={StaticResource InverseBoolToVisibility}}" />
+                                            <!-- After a ring: "Ça sonne… · message", then the reply, in place of the status -->
+                                            <StackPanel Orientation="Horizontal" Visibility="{Binding HasNote, Converter={StaticResource BoolToVisibility}}">
+                                                <Path Data="{StaticResource BellGeometry}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center"
+                                                      Fill="{Binding Foreground, ElementName=NoteText}" />
+                                                <TextBlock x:Name="NoteText" Text="{Binding Note}" FontSize="12" FontWeight="SemiBold" Margin="6,0,0,0"
+                                                           TextTrimming="CharacterEllipsis" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDoNotDisturb}" Value="True">
+                                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Online}" Value="False">
+                                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    <Setter TargetName="Row" Property="Opacity" Value="0.5" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                    <Setter TargetName="Star" Property="Text" Value="&#xE735;" />
+                                    <Setter TargetName="Star" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                </DataTrigger>
+                                <!-- The row of a PC just rung stands out: its colour tells what happened. -->
+                                <DataTrigger Binding="{Binding HasNote}" Value="True">
+                                    <Setter TargetName="Row" Property="BorderThickness" Value="1.5" />
+                                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource SystemFillColorAttentionBackgroundBrush}" />
+                                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding NoteKind}" Value="Quiet">
+                                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                    <Setter TargetName="NoteText" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding NoteKind}" Value="Failed">
+                                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                    <Setter TargetName="NoteText" Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding NoteKind}" Value="Replied">
+                                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                    <Setter TargetName="NoteText" Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                </DataTrigger>
+                                <!-- It no longer rings and nobody answered: grey, never "Ça sonne…" (the author, October 31). -->
+                                <DataTrigger Binding="{Binding NoteKind}" Value="Closed">
+                                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource ControlStrongStrokeColorDefaultBrush}" />
+                                    <Setter TargetName="NoteText" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding NoteKind}" Value="Unanswered">
+                                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource ControlStrongStrokeColorDefaultBrush}" />
+                                    <Setter TargetName="NoteText" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Nobody yet -->
+            <StackPanel Grid.Row="2" VerticalAlignment="Center" Margin="12,0"
+                        Visibility="{Binding IsSearching, Converter={StaticResource BoolToVisibility}}">
+                <Path Data="{StaticResource BellGeometry}" Width="36" Height="36" Stretch="Uniform" Margin="0,0,0,14"
+                      Fill="{DynamicResource TextFillColorTertiaryBrush}" />
+                <TextBlock Text="{local:Tr Searching}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                <TextBlock Style="{StaticResource Secondary}" Text="{local:Tr SearchingHint}" Margin="0,4,0,0"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- The message, the ready-made ones, everyone -->
+            <StackPanel Grid.Row="3" Margin="0,10,0,0">
+                <TextBlock Style="{StaticResource Secondary}" Text="{local:Tr WithMessage}" Margin="0,0,0,6" />
+                <Grid>
+                    <TextBox x:Name="MessageBox" Text="{Binding Message, UpdateSourceTrigger=PropertyChanged}" MaxLength="300" />
+                    <TextBlock Text="{local:Tr MessagePlaceholder}" Margin="12,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=MessageBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Chips}" Margin="0,8,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ChipItem}">
+                            <Button Style="{StaticResource ChipButton}" Content="{Binding Text}"
+                                    Command="{Binding DataContext.ChipCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <!-- "Sonner tout le monde" in two clicks: the first turns it yellow for 3 s (the bar runs out), the second rings. -->
+                <Grid Margin="0,2,0,0">
+                    <Button HorizontalAlignment="Stretch" Padding="0,7" Command="{Binding RingEveryoneCommand}"
+                            AutomationProperties.Name="{local:Tr RingEveryone}"
+                            Visibility="{Binding IsConfirmingEveryone, Converter={StaticResource InverseBoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource BellGeometry}" Width="14" Height="14" Stretch="Uniform"
+                                  Fill="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <TextBlock Text="{local:Tr RingEveryone}" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding RingEveryoneCommand}" Cursor="Hand" HorizontalAlignment="Stretch" Template="{StaticResource ConfirmEveryoneTemplate}"
+                            AutomationProperties.Name="{Binding ConfirmEveryoneText}"
+                            Visibility="{Binding IsConfirmingEveryone, Converter={StaticResource BoolToVisibility}}">
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </Grid>
+
+        <!-- The notice of what has no row of its own ("Aucun poste en ligne", the missed rings), over the bottom of the
+             window. Its shadow is a layer of its own: an effect on the notice itself would draw its text as a blurred picture. -->
+        <Grid VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16,0,16,14" MaxWidth="360" IsHitTestVisible="False"
+              Visibility="{Binding Toast.IsVisible, Converter={StaticResource BoolToVisibility}}">
+            <Border CornerRadius="8" Background="{DynamicResource FlyoutBackground}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270" Opacity="0.4" />
+                </Border.Effect>
+            </Border>
+            <Border Padding="14,10" CornerRadius="8" BorderThickness="1.5"
+                    BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" Background="{DynamicResource FlyoutBackground}">
+            <DockPanel>
+                <TextBlock Style="{StaticResource Glyph}" Text="{Binding Toast.Glyph}" FontSize="15" Margin="0,0,10,0"
+                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                <StackPanel>
+                    <TextBlock Text="{Binding Toast.Title}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Style="{StaticResource Secondary}" Text="{Binding Toast.Detail}" TextWrapping="Wrap"
+                               Visibility="{Binding Toast.HasDetail, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+            </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
