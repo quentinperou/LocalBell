@@ -18,7 +18,7 @@ paraît plus cohérent"): code, protocol tag and API path, settings folder, inst
 
 ## Project status (October 31, 2026)
 
-Version **0.1.1**, not released. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
+Version **0.1.2**, tagged `v0.1.2` on the shop PC (November 3), not pushed nor released yet. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
 repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
@@ -76,7 +76,8 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
 - **Installed on two PCs** (0.1.0, October 31: the shop PC and BUREAU3): they see each other, ring and reply.
 - **0.1.1** (October 31, after his first install): the ring repeated twice by default (was 3), a click on the bell near
   the clock opens the widget's quick panel (or the window, a setting), the music box (a fourth bell, for Halloween).
-- Next: 0.1.1 on BUREAU3 (installed on the shop PC); the list C of the audit.
+- **0.1.2** (November 3): the update shown in the quick panel and the menu, the widget on a small taskbar, the
+  fixes of the audit's list C, "Oublier ce poste". Next: pushed and released from his home; installed on the two PCs.
   Ideas for later: a remembered window place; **keyboard shortcuts to ring each PC** (his idea, October 31: one per
   PC, set in Settings; global shortcuts, so mind the clashes with other apps).
 
@@ -253,8 +254,8 @@ the drive: `git -c safe.directory=<path> …` on the shop PC.
 
 ## Releasing
 
-As PageCompose: bump `Directory.Build.props`, commit "LocalBell X.Y.Z" (the author's commits, **no Co-Authored-By
-line**), lightweight tag `vX.Y.Z`, `git push origin main vX.Y.Z` (the tag alone leaves `main` behind on GitHub); the
+As PageCompose: bump `Directory.Build.props`, commit "LocalBell X.Y.Z" (the author's commits; Claude's
+Co-Authored-By line is fine since November 3), lightweight tag `vX.Y.Z`, `git push origin main vX.Y.Z` (the tag alone leaves `main` behind on GitHub); the
 workflow builds and publishes the release with the installer (a tag with a suffix is a pre-release, for the Beta
 channel). Never push nor sign in to GitHub from the shop PC: he publishes from
 home with his account. The Store version goes out **by hand**, as NowPlaying's: `scripts\build-store.ps1`, then a new
