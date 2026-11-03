@@ -27,6 +27,7 @@
   <data name="SearchingHint" xml:space="preserve"><value>LocalBell must be running on them, on the same network.</value></data>
   <data name="SettingsTooltip" xml:space="preserve"><value>Settings</value></data>
   <data name="DndTooltip" xml:space="preserve"><value>Do not disturb</value></data>
+  <data name="ForgetPc" xml:space="preserve"><value>Forget this PC</value></data>
   <data name="FavoriteTooltip" xml:space="preserve"><value>Favourite: rung from the taskbar in one click</value></data>
   <data name="NobodyOnline" xml:space="preserve"><value>No computer online</value></data>
   <data name="ReplyTitle" xml:space="preserve"><value>{0}: {1}</value></data>

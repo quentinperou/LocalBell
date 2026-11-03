@@ -51,6 +51,9 @@ public sealed class PeerItem : ObservableObject
 
     public bool Online => peer.Online;
 
+    /// <summary>Offline: it may be forgotten (an online PC would come back at once).</summary>
+    public bool CanForget => !peer.Online;
+
     /// <summary>Online and not in "do not disturb": its Ring button is the accent one.</summary>
     public bool IsAvailable => peer.Online && peer.Status == PeerStatus.Available;
 
@@ -115,6 +118,7 @@ public sealed class PeerItem : ObservableObject
         OnPropertyChanged(nameof(Peer));
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(Online));
+        OnPropertyChanged(nameof(CanForget));
         OnPropertyChanged(nameof(IsAvailable));
         OnPropertyChanged(nameof(IsDoNotDisturb));
         OnPropertyChanged(nameof(StatusText));

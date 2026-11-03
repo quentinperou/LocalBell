@@ -27,6 +27,7 @@
   <data name="SearchingHint" xml:space="preserve"><value>LocalBell doit être lancé sur chacun, sur le même réseau.</value></data>
   <data name="SettingsTooltip" xml:space="preserve"><value>Paramètres</value></data>
   <data name="DndTooltip" xml:space="preserve"><value>Ne pas déranger</value></data>
+  <data name="ForgetPc" xml:space="preserve"><value>Oublier ce poste</value></data>
   <data name="FavoriteTooltip" xml:space="preserve"><value>Favori : sonné en un clic depuis la barre des tâches</value></data>
   <data name="NobodyOnline" xml:space="preserve"><value>Aucun poste en ligne</value></data>
   <data name="ReplyTitle" xml:space="preserve"><value>{0} : {1}</value></data>

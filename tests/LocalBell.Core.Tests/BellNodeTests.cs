@@ -177,6 +177,22 @@ public class BellNodeTests
     }
 
     [Fact]
+    public async Task APcForgotten_LeavesTheList()
+    {
+        await using var atelier = await StartAsync("a", "Atelier");
+        var caisse = await StartAsync("c", "Caisse", AddressOf(atelier));
+        await caisse.DisposeAsync();
+        await Eventually(() => !PeerOf(atelier, "c").Online, "Caisse offline");
+        bool told = false;
+        atelier.PeersChanged += (_, _) => told = true;
+
+        atelier.Forget("c");
+
+        Assert.DoesNotContain(atelier.Peers, p => p.Id == "c");
+        Assert.True(told);
+    }
+
+    [Fact]
     public async Task Ring_ToAPcThatIsGone_Fails()
     {
         await using var caisse = await StartAsync("c", "Caisse");

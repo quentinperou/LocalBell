@@ -46,6 +46,7 @@ public sealed class MainViewModel : ObservableObject
         RingCommand = new RelayCommand(p => { if (p is PeerItem item) _ = RingAsync(item); });
         RingEveryoneCommand = new RelayCommand(OnRingEveryoneClick);
         FavoriteCommand = new RelayCommand(p => { if (p is PeerItem item) ToggleFavorite(item); });
+        ForgetCommand = new RelayCommand(p => { if (p is PeerItem { CanForget: true } item) Forget(item); });
         RingBackCommand = new RelayCommand(p => { if (p is MissedRing missed) RingBack(missed); });
         ChipCommand = new RelayCommand(p => { if (p is ChipItem chip) Message = chip.IsSelected ? "" : chip.Text; });
         DoNotDisturbOffCommand = new RelayCommand(TurnOffDoNotDisturb);
@@ -102,6 +103,8 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand RingCommand { get; }
     public RelayCommand RingEveryoneCommand { get; }
     public RelayCommand FavoriteCommand { get; }
+
+    public RelayCommand ForgetCommand { get; }
     public RelayCommand ChipCommand { get; }
     public RelayCommand DoNotDisturbOffCommand { get; }
 
@@ -191,6 +194,17 @@ public sealed class MainViewModel : ObservableObject
         foreach (var row in Peers) row.IsFavorite = row.Id == settings.Favorite;
         settings.Save();
         OnPropertyChanged(nameof(Favorite));
+    }
+
+    /// <summary>
+    /// "Oublier ce poste" (a right click on its row; the author, November 3): a PC that is no more leaves the list and
+    /// the PCs kept for the next start (the node says its list changed: <see cref="RefreshPeers"/>), and is no longer the
+    /// favourite. It comes back if it is ever heard from again.
+    /// </summary>
+    private void Forget(PeerItem item)
+    {
+        if (settings.Favorite == item.Id) settings.Favorite = null;
+        node.Forget(item.Id);
     }
 
     // ---- Ringing ----

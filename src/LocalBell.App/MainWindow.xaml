@@ -67,7 +67,20 @@
                 <ItemsControl ItemsSource="{Binding Peers}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:PeerItem}">
-                            <Border x:Name="Row" Style="{StaticResource Card}" Padding="14,10">
+                            <!-- Tag: the window's view model, for the menu (not in the window's tree, it cannot look it up). -->
+                            <Border x:Name="Row" Style="{StaticResource Card}" Padding="14,10"
+                                    Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+                                <!-- A right click: forget a PC that is no more (offline only; the author, November 3). -->
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{local:Tr ForgetPc}" IsEnabled="{Binding CanForget}" CommandParameter="{Binding}"
+                                                  Command="{Binding PlacementTarget.Tag.ForgetCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                            <MenuItem.Icon>
+                                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" FontSize="14" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
                                 <DockPanel>
                                     <Grid DockPanel.Dock="Right">
                                         <Button Style="{StaticResource AccentButtonStyle}" Padding="12,5" VerticalAlignment="Center" AutomationProperties.Name="{Binding RingLabel}"

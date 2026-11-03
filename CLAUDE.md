@@ -22,7 +22,7 @@ Version **0.1.1**, not released. **Git repository since October 31, 2026** (bran
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
 repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
-- Done: the network (`LocalBell.Core`, tested: 112 tests with the update feed), the icon, the app: the list window, the popup (discreet
+- Done: the network (`LocalBell.Core`, tested: 113 tests with the update feed), the icon, the app: the list window, the popup (discreet
   or loud), the ring sounds, the bell near the clock with its menu, "do not disturb" (moon button, banner, menu),
   favourites (star), single instance, **Settings on six pages** (as approved: name of the PC, start with Windows,
   do not disturb, language, theme; sound + own WAV/MP3 file, volume, ring when Windows is muted, repeat; popup style
@@ -113,6 +113,9 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
   right-click menu, in the accent colour; the panel and the menu install from the window, whose banner shows the progress.
 - **The widget fits a small taskbar** (Windows 11 26H2 lets it be 32 px; the widget stuck out of it, October 31):
   smaller bell, button and badge, 4 px from its edges. A vertical taskbar (left or right) hides it.
+- **Forget a PC that is no more** (his idea, November 3): a right click on its row → "Oublier ce poste", for an
+  offline PC only (an online one would come back at once): out of the list, of the PCs kept for the next start, no
+  longer the favourite; back if it is ever heard from again.
 - **"Do not disturb" at hand**: right click on the widget or the bell near the clock (30 min, 1 h, until tomorrow,
   until turned back on), the moon beside Settings in the list (accent while on, with a banner), a moon in place of
   the bell on the widget. While on: no sound, no popup, rings kept as missed. Others see a yellow dot and get a toast
@@ -211,7 +214,7 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     change applied and saved at once; a language change builds the windows again (texts are read when a window is
     built).
   - `Properties/Strings.resx` + `Strings.fr.resx`, `{local:Tr Key}` in XAML, `Strings.Get/Format/Count` in code.
-- `tests/LocalBell.Core.Tests` (xUnit, 112 tests): the protocol, the addresses, the directory, the server, `BellNode`
+- `tests/LocalBell.Core.Tests` (xUnit, 113 tests): the protocol, the addresses, the directory, the server, `BellNode`
   end to end (several nodes on 127.0.0.1, without UDP: nothing leaves the PC), the update feed, and the parity of the
   two languages.
 
