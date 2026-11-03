@@ -190,4 +190,44 @@
   <data name="ClassicRemovalText" xml:space="preserve"><value>LocalBell est aussi installé depuis GitHub sur ce PC, et une seule version peut tourner à la fois. Désinstaller celle de GitHub ?
 
 LocalBell se ferme pendant la désinstallation : relancez-le ensuite depuis le menu Démarrer.</value></data>
+  <data name="PageShortcuts" xml:space="preserve"><value>Raccourcis clavier</value></data>
+  <data name="PageHistory" xml:space="preserve"><value>Historique</value></data>
+  <data name="ShortcutsRingTitle" xml:space="preserve"><value>Sonner un poste</value></data>
+  <data name="ShortcutsRingHint" xml:space="preserve"><value>Partout dans Windows, même la fenêtre fermée. Aucun au départ : choisissez les vôtres.</value></data>
+  <data name="ShortcutsAppHint" xml:space="preserve"><value>Ouvrir la fenêtre ou le panneau, ne pas déranger.</value></data>
+  <data name="ShortcutsNoPc" xml:space="preserve"><value>Aucun poste trouvé pour l'instant.</value></data>
+  <data name="ShortcutPanel" xml:space="preserve"><value>Ouvrir le panneau rapide</value></data>
+  <data name="ShortcutDnd" xml:space="preserve"><value>Ne pas déranger (activer ou désactiver)</value></data>
+  <data name="ShortcutSet" xml:space="preserve"><value>Définir</value></data>
+  <data name="ShortcutPress" xml:space="preserve"><value>Appuyez sur les touches…</value></data>
+  <data name="ShortcutEscape" xml:space="preserve"><value>Échap pour annuler</value></data>
+  <data name="ShortcutTaken" xml:space="preserve"><value>Déjà pris par une autre application : choisissez-en un autre</value></data>
+  <data name="ShortcutTooSimple" xml:space="preserve"><value>Combinez deux touches parmi Ctrl, Alt et Maj, ou Win</value></data>
+  <data name="ShortcutTypes" xml:space="preserve"><value>Sur ce clavier, cela écrit « {0} » : choisissez-en un autre</value></data>
+  <data name="ShortcutUsedBy" xml:space="preserve"><value>Déjà utilisé pour {0}</value></data>
+  <data name="KeyCtrl" xml:space="preserve"><value>Ctrl</value></data>
+  <data name="KeyAlt" xml:space="preserve"><value>Alt</value></data>
+  <data name="KeyShift" xml:space="preserve"><value>Maj</value></data>
+  <data name="KeyWin" xml:space="preserve"><value>Win</value></data>
+  <data name="HistoryKeepTitle" xml:space="preserve"><value>Garder l'historique</value></data>
+  <data name="HistoryKeepHint" xml:space="preserve"><value>Reçues et envoyées, sur ce poste seulement.</value></data>
+  <data name="HistoryKeepToday" xml:space="preserve"><value>Aujourd'hui seulement</value></data>
+  <data name="HistoryKeepDays" xml:space="preserve"><value>{0} jours</value></data>
+  <data name="HistoryClear" xml:space="preserve"><value>Effacer</value></data>
+  <data name="HistoryEmpty" xml:space="preserve"><value>Aucune sonnerie pour l'instant.</value></data>
+  <data name="HistoryToday" xml:space="preserve"><value>Aujourd'hui</value></data>
+  <data name="HistoryYesterday" xml:space="preserve"><value>Hier</value></data>
+  <data name="HistoryDayFormat" xml:space="preserve"><value>dddd d MMMM</value></data>
+  <data name="HistoryRangYou" xml:space="preserve"><value>{0} vous a sonné</value></data>
+  <data name="HistoryRangEveryone" xml:space="preserve"><value>{0} a sonné tout le monde</value></data>
+  <data name="HistoryYouRang" xml:space="preserve"><value>Vous avez sonné {0}</value></data>
+  <data name="HistoryEveryone" xml:space="preserve"><value>tout le monde ({0})</value></data>
+  <data name="HistoryNoMessage" xml:space="preserve"><value>Sans message</value></data>
+  <data name="HistoryYourReply" xml:space="preserve"><value>Vous : {0}</value></data>
+  <data name="HistoryMissed" xml:space="preserve"><value>Manquée</value></data>
+  <data name="HistoryClosed" xml:space="preserve"><value>Vu, fermé sans réponse</value></data>
+  <data name="HistoryUnanswered" xml:space="preserve"><value>Pas de réponse</value></data>
+  <data name="HistoryQuiet" xml:space="preserve"><value>Ne sera pas dérangé</value></data>
+  <data name="HistoryFailed" xml:space="preserve"><value>Ne répond pas</value></data>
+  <data name="HistoryPart" xml:space="preserve"><value>{0} : {1}</value></data>
 </root>

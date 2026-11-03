@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows.Threading;
 using LocalBell.App.Services;
 using LocalBell.Core;
+using LocalBell.Core.History;
 using LocalBell.Core.Peers;
 using LocalBell.Core.Protocol;
 
@@ -33,13 +34,15 @@ public sealed class MainViewModel : ObservableObject
     private readonly Dispatcher dispatcher;
     private readonly DispatcherTimer saveTimer;
     private readonly DispatcherTimer dndTimer;
+    private readonly DispatcherTimer historyTimer;
     private string message = "";
 
-    public MainViewModel(AppSettings settings, BellNode node, RingPopups popups)
+    public MainViewModel(AppSettings settings, BellNode node, RingPopups popups, RingLog history)
     {
         this.settings = settings;
         this.node = node;
         this.popups = popups;
+        History = history;
         dispatcher = Dispatcher.CurrentDispatcher;
 
         foreach (string text in settings.Messages) Chips.Add(new ChipItem(text));
@@ -61,6 +64,18 @@ public sealed class MainViewModel : ObservableObject
         dndTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
         dndTimer.Tick += (_, _) => { if (settings.DoNotDisturbUntil is not null && !settings.IsDoNotDisturb) TurnOffDoNotDisturb(); };
         dndTimer.Start();
+        // The history is written at most every 2 s too (and on exit).
+        historyTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        historyTimer.Tick += (_, _) =>
+        {
+            historyTimer.Stop();
+            history.Save();
+        };
+        history.Changed += (_, _) =>
+        {
+            historyTimer.Stop();
+            historyTimer.Start();
+        };
 
         node.PeersChanged += (_, _) => dispatcher.BeginInvoke(RefreshPeers);
         node.RingReceived += (_, ring) => dispatcher.BeginInvoke(() => OnRing(ring));
@@ -71,6 +86,9 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<PeerItem> Peers { get; } = [];
 
     public ObservableCollection<ChipItem> Chips { get; } = [];
+
+    /// <summary>The rings received and sent, for Settings → History.</summary>
+    public RingLog History { get; }
 
     /// <summary>
     /// The rings received in "do not disturb", counted by the badge of the widget and listed in its flyout ("Atelier
@@ -88,7 +106,13 @@ public sealed class MainViewModel : ObservableObject
     {
         MissedRings.Remove(missed);
         OnPropertyChanged(nameof(DoNotDisturbDetail));
-        if (Peers.FirstOrDefault(p => p.Id == missed.Ring.From.Id) is { } row) _ = RingAsync(row);
+        RingBack(missed.Ring.From.Id);
+    }
+
+    /// <summary>Rings a PC of the list by its id ("Rappeler" in the flyout and in Settings → History, a shortcut).</summary>
+    public void RingBack(string id)
+    {
+        if (Peers.FirstOrDefault(p => p.Id == id) is { } row) _ = RingAsync(row);
     }
 
     /// <summary>The missed rings were seen (the flyout of the widget closed).</summary>
@@ -204,8 +228,13 @@ public sealed class MainViewModel : ObservableObject
     private void Forget(PeerItem item)
     {
         if (settings.Favorite == item.Id) settings.Favorite = null;
+        // Its shortcut goes too: kept, it would hold its keys with no row left to show it in Settings.
+        if (settings.Shortcuts.Remove(GlobalHotkeys.RingAction(item.Id))) ShortcutsChanged?.Invoke(this, EventArgs.Empty);
         node.Forget(item.Id);
     }
+
+    /// <summary>Raised when a shortcut went with its PC (the app registers the others again).</summary>
+    public event EventHandler? ShortcutsChanged;
 
     // ---- Ringing ----
 
@@ -223,6 +252,7 @@ public sealed class MainViewModel : ObservableObject
         string text = Message;
         item.ShowNote(NoteKind.Ringing, RingingText(text), RingingNote);
         var outcome = await node.RingAsync(item.Peer, text);
+        History.AddSent(text, false, [outcome]);
         item.LastRingId = outcome.RingId;
         ShowOutcome(item, outcome.Result, text);
         if (outcome.Result != RingResult.Failed) Message = "";
@@ -296,6 +326,7 @@ public sealed class MainViewModel : ObservableObject
         var rows = Peers.Where(p => p.Online).ToList();
         foreach (var row in rows) row.ShowNote(NoteKind.Ringing, RingingText(text), RingingNote);
         var outcomes = await node.RingEveryoneAsync(text);
+        History.AddSent(text, true, outcomes);
         foreach (var outcome in outcomes)
         {
             if (Peers.FirstOrDefault(p => p.Id == outcome.Peer.Id) is not { } row) continue;
@@ -311,6 +342,7 @@ public sealed class MainViewModel : ObservableObject
     /// </summary>
     private void OnReply(IncomingReply reply)
     {
+        History.AddReply(reply);
         string time = DateTime.Now.ToString("t", CultureInfo.CurrentCulture);
         var row = Peers.FirstOrDefault(p => p.Id == reply.From.Id);
         if (reply.Kind == ReplyKind.Text)
@@ -327,6 +359,7 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>A ring received: a popup and the bell, or, in "do not disturb", a missed ring.</summary>
     private void OnRing(IncomingRing ring)
     {
+        History.AddReceived(ring);
         if (ring.Quiet)
         {
             MissedRings.Insert(0, new MissedRing(ring,
@@ -334,7 +367,17 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(DoNotDisturbDetail));
             return;
         }
-        popups.Show(ring, text => _ = node.ReplyAsync(ring, text), kind => _ = node.ReplyAsync(ring, "", kind));
+        popups.Show(ring,
+            text =>
+            {
+                _ = node.ReplyAsync(ring, text);
+                History.Answer(ring.Id, RingFate.Replied, text);
+            },
+            kind =>
+            {
+                _ = node.ReplyAsync(ring, "", kind);
+                History.Answer(ring.Id, kind == ReplyKind.Closed ? RingFate.Closed : RingFate.Unanswered);
+            });
     }
 
     // ---- "Do not disturb" ----

@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using LocalBell.App.Services;
 using LocalBell.App.ViewModels;
 using LocalBell.Core;
+using LocalBell.Core.History;
 using LocalBell.Core.Protocol;
 
 namespace LocalBell.App;
@@ -25,6 +26,7 @@ public partial class App : Application
     private TaskbarHost? taskbar;
     private WidgetFlyout? flyout;
     private RingPopups? popups;
+    private GlobalHotkeys? shortcuts;
     private PeerItem? favorite; // the one the widget shows, watched for its name and its notes
     private bool withWidget = true;
     private string? profile;
@@ -150,7 +152,9 @@ public partial class App : Application
         }
 
         popups = new RingPopups(Settings);
-        viewModel = new MainViewModel(Settings, node, popups);
+        var history = RingLog.Load(Path.Combine(AppSettings.FolderOf(profile), "history.json"));
+        history.KeepDays = Settings.HistoryDays;
+        viewModel = new MainViewModel(Settings, node, popups, history);
         tray = new TrayIcon(OnTrayClick, TrayMenuItems);
         UpdateTrayTooltip();
         viewModel.DoNotDisturbChanged += (_, _) => UpdateTrayTooltip();
@@ -159,6 +163,9 @@ public partial class App : Application
         MainWindow = new MainWindow(viewModel);
         if (!hidden) MainWindow.Show();
         if (withWidget) StartWidget();
+        shortcuts = new GlobalHotkeys(OnShortcut);
+        ApplyShortcuts();
+        viewModel.ShortcutsChanged += (_, _) => ApplyShortcuts();
 
         // A newer version from GitHub shows over the list and in Settings → Updates (not in the Store version).
         _ = Updater.CheckAtStartupAsync();
@@ -229,6 +236,41 @@ public partial class App : Application
         flyout ??= new WidgetFlyout(viewModel!);
         if (flyout.IsVisible) flyout.Hide();
         else flyout.ShowAbove(left, barTop);
+    }
+
+    /// <summary>The shortcuts of Settings registered again (after a change); those of the PCs no longer listed are not.</summary>
+    public void ApplyShortcuts() =>
+        shortcuts?.Apply(Settings.Shortcuts.Where(s => GlobalHotkeys.PcOf(s.Key) is not { } pc || viewModel!.Peers.Any(p => p.Id == pc)));
+
+    /// <summary>The shortcuts, for Settings: what another app holds, and none at all while one is recorded.</summary>
+    public GlobalHotkeys? Shortcuts => shortcuts;
+
+    /// <summary>
+    /// A shortcut pressed, anywhere in Windows: rings its PC (as the favourite of the widget is rung: the row tells what
+    /// happened), opens the window or the quick panel, or turns "do not disturb" on or off (on: until turned off).
+    /// </summary>
+    private void OnShortcut(string action)
+    {
+        if (viewModel is null) return;
+        switch (action)
+        {
+            case GlobalHotkeys.OpenAction:
+                ShowMainWindow();
+                break;
+            case GlobalHotkeys.PanelAction:
+                var area = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Control.MousePosition).WorkingArea;
+                flyout ??= new WidgetFlyout(viewModel);
+                if (flyout.IsVisible) flyout.Hide();
+                else flyout.ShowNear(area.Right, area.Bottom); // near the clock (kept within the screen)
+                break;
+            case GlobalHotkeys.DoNotDisturbAction:
+                if (viewModel.IsDoNotDisturb) viewModel.TurnOffDoNotDisturb();
+                else viewModel.TurnOnDoNotDisturb("forever");
+                break;
+            default:
+                if (GlobalHotkeys.PcOf(action) is { } pc) viewModel.RingBack(pc);
+                break;
+        }
     }
 
     /// <summary>
@@ -399,6 +441,8 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         popups?.StopBell(); // the PC's sound as it was, if it was turned on for a ring
+        shortcuts?.Dispose();
+        viewModel?.History.Save();
         tray?.Dispose();
         taskbar?.Dispose(); // its process ends with the pipe
         flyout?.Close();

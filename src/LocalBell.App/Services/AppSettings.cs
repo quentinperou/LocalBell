@@ -145,6 +145,15 @@ public sealed class AppSettings
 
     public List<KnownPc> KnownPcs { get; set; } = [];
 
+    /// <summary>The days Settings → History keeps: 1 (today only), 7 or 30.</summary>
+    public int HistoryDays { get; set; } = 7;
+
+    /// <summary>
+    /// The keyboard shortcuts set in Settings, by action (<see cref="GlobalHotkeys"/>: "open", "panel", "dnd",
+    /// "ring:" + the id of a PC) → keys ("Ctrl+Alt+D1"). None by default (the author, November 3).
+    /// </summary>
+    public Dictionary<string, string> Shortcuts { get; set; } = [];
+
     /// <summary>Developer mode (About, as in ScreenClip and TextCase; off by default): <see cref="DevLog"/> writes.</summary>
     public bool DeveloperMode { get; set; }
 
@@ -208,6 +217,8 @@ public sealed class AppSettings
         settings.Replies ??= [];
         settings.Addresses ??= [];
         settings.KnownPcs ??= [];
+        settings.Shortcuts ??= [];
+        if (settings.HistoryDays is not (1 or 7 or 30)) settings.HistoryDays = 7;
         return settings;
     }
 

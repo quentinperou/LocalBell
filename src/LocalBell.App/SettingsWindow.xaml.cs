@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using LocalBell.App.Services;
 using LocalBell.App.ViewModels;
@@ -16,7 +17,7 @@ using Microsoft.Win32;
 namespace LocalBell.App;
 
 /// <summary>
-/// Settings, on seven pages. Each change applies at once and is saved (no OK button, as in Windows 11); the name of the
+/// Settings, on nine pages. Each change applies at once and is saved (no OK button, as in Windows 11); the name of the
 /// PC when its box is left or Enter is pressed.
 /// </summary>
 public partial class SettingsWindow : Window
@@ -29,8 +30,11 @@ public partial class SettingsWindow : Window
     private readonly ObservableCollection<EditableText> messages;
     private readonly ObservableCollection<EditableText> replies;
     private readonly ObservableCollection<string> addresses;
+    private readonly ObservableCollection<ShortcutRow> pcShortcuts = [];
+    private readonly ObservableCollection<ShortcutRow> appShortcuts = [];
     private readonly bool initialized;
     private bool updating;
+    private ShortcutRow? recording; // the shortcut whose keys are being pressed
 
     public SettingsWindow(MainViewModel viewModel, BellNode node, string? profile, int page = 0)
     {
@@ -39,7 +43,7 @@ public partial class SettingsWindow : Window
         this.viewModel = viewModel;
         this.node = node;
         this.profile = profile;
-        pages = [GeneralPage, RingPage, PopupPage, MessagesPage, NetworkPage, UpdatesPage, AboutPage];
+        pages = [GeneralPage, RingPage, PopupPage, MessagesPage, ShortcutsPage, HistoryPage, NetworkPage, UpdatesPage, AboutPage];
         // The pages scroll rather than the window going past the screen.
         MaxHeight = SystemParameters.WorkArea.Height;
 
@@ -101,6 +105,23 @@ public partial class SettingsWindow : Window
         RepliesList.ItemsSource = replies;
         AddReplyButton.IsEnabled = replies.Count < 3;
 
+        // Keyboard shortcuts
+        appShortcuts.Add(new ShortcutRow(GlobalHotkeys.OpenAction, Strings.Get("TrayOpen"), null));
+        appShortcuts.Add(new ShortcutRow(GlobalHotkeys.PanelAction, Strings.Get("ShortcutPanel"), null));
+        appShortcuts.Add(new ShortcutRow(GlobalHotkeys.DoNotDisturbAction, Strings.Get("ShortcutDnd"), null));
+        PcShortcutsList.ItemsSource = pcShortcuts;
+        AppShortcutsList.ItemsSource = appShortcuts;
+        FillPcShortcuts();
+        viewModel.Peers.CollectionChanged += OnPeerListChanged;
+
+        // History
+        HistoryKeepBox.Items.Add(new Option<int>(1, Strings.Get("HistoryKeepToday")));
+        HistoryKeepBox.Items.Add(new Option<int>(7, Strings.Format("HistoryKeepDays", 7)));
+        HistoryKeepBox.Items.Add(new Option<int>(30, Strings.Format("HistoryKeepDays", 30)));
+        Select(HistoryKeepBox, settings.HistoryDays);
+        ShowHistory();
+        viewModel.History.Changed += OnHistoryChanged;
+
         // Network
         var shared = LocalNetwork.AddressesToShare();
         AddressText.Text = shared.Count > 0 ? shared[0].ToString() : "—";
@@ -155,6 +176,7 @@ public partial class SettingsWindow : Window
     private void PageList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (pages is null) return; // the first page is chosen while the window is built
+        StopRecording();
         for (int i = 0; i < pages.Length; i++)
             pages[i].Visibility = i == PageList.SelectedIndex ? Visibility.Visible : Visibility.Hidden;
     }
@@ -166,6 +188,9 @@ public partial class SettingsWindow : Window
 
     private void Window_Closed(object? sender, EventArgs e)
     {
+        StopRecording();
+        viewModel.Peers.CollectionChanged -= OnPeerListChanged;
+        viewModel.History.Changed -= OnHistoryChanged;
         viewModel.DoNotDisturbChanged -= OnDoNotDisturbChanged;
         node.PeersChanged -= OnPeersChanged;
         Updater.Checked -= Updater_Checked;
@@ -447,6 +472,171 @@ public partial class SettingsWindow : Window
         string time = DateTime.Now.ToString("t", CultureInfo.CurrentCulture);
         QuietPreview.Show(PopupStyle.Quiet, Strings.Get("PreviewName"), Strings.Get("PreviewMessage"), false, time, settings.Replies);
         LoudPreview.Show(PopupStyle.Loud, Strings.Get("PreviewName"), Strings.Get("PreviewMessage"), false, time, settings.Replies);
+    }
+
+    // ---- Keyboard shortcuts ----
+
+    private static App TheApp => (App)Application.Current;
+
+    private void OnPeerListChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => FillPcShortcuts();
+
+    // One row a PC of the list, in its order; a row already there is kept (it may be recording).
+    private void FillPcShortcuts()
+    {
+        var rows = viewModel.Peers
+            .Select(p => pcShortcuts.FirstOrDefault(r => r.Peer == p) ?? new ShortcutRow(GlobalHotkeys.RingAction(p.Id), p.Name, p))
+            .ToList();
+        if (recording is { IsPc: true } && !rows.Contains(recording)) StopRecording();
+        pcShortcuts.Clear();
+        foreach (var row in rows) pcShortcuts.Add(row);
+        NoPcRow.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ShowShortcuts();
+    }
+
+    // The keys of each row, from the settings, and whether another app holds them.
+    private void ShowShortcuts()
+    {
+        var taken = TheApp.Shortcuts?.Taken;
+        foreach (var row in pcShortcuts.Concat(appShortcuts))
+        {
+            row.Hotkey = settings.Shortcuts.TryGetValue(row.Action, out string? text) ? Hotkey.Parse(text) : null;
+            row.IsTaken = row.HasHotkey && taken?.Contains(row.Action) == true;
+        }
+    }
+
+    // "Définir" or the pencil: the row waits for keys; meanwhile no shortcut works (their keys must reach this window).
+    private void SetShortcut_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not ShortcutRow row) return;
+        StopRecording();
+        recording = row;
+        ShowHeld(row, ModifierKeys.None);
+        row.IsRecording = true;
+        TheApp.Shortcuts?.Suspend();
+        // The button clicked is hidden now: the keys go to the window.
+        Dispatcher.BeginInvoke(() => Keyboard.Focus(this), System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void DeleteShortcut_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not ShortcutRow row) return;
+        StopRecording();
+        settings.Shortcuts.Remove(row.Action);
+        settings.Save();
+        TheApp.ApplyShortcuts();
+        ShowShortcuts();
+    }
+
+    // Recording ends (keys taken, Échap, a click elsewhere, another page): the shortcuts work again.
+    private void StopRecording()
+    {
+        if (recording is null) return;
+        recording.IsRecording = false;
+        recording = null;
+        TheApp.ApplyShortcuts();
+        ShowShortcuts();
+    }
+
+    private static void ShowHeld(ShortcutRow row, ModifierKeys modifiers)
+    {
+        row.IsRefused = false;
+        row.RecordingNote = Strings.Get("ShortcutEscape");
+        row.RecordingText = modifiers == ModifierKeys.None
+            ? Strings.Get("ShortcutPress")
+            : string.Join(" + ", Hotkey.ModifierParts(modifiers)) + " + …";
+    }
+
+    /// <summary>
+    /// While a row records: the modifiers held show in it; a key with them is the shortcut, unless it is not enough keys,
+    /// types a character on this keyboard (AltGr), or is another row's: then the row says why and waits for others.
+    /// </summary>
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (recording is not { } row) return;
+        e.Handled = true;
+        var key = e.Key switch
+        {
+            Key.System => e.SystemKey,
+            Key.ImeProcessed => e.ImeProcessedKey,
+            Key.DeadCharProcessed => e.DeadCharProcessedKey,
+            _ => e.Key,
+        };
+        var modifiers = Keyboard.Modifiers;
+        if (key == Key.Escape && modifiers == ModifierKeys.None)
+        {
+            StopRecording();
+            return;
+        }
+        if (key == Key.None || Hotkey.IsModifier(key))
+        {
+            ShowHeld(row, modifiers);
+            return;
+        }
+        var hotkey = new Hotkey(modifiers, key);
+        string? refusal = !hotkey.IsEnoughKeys ? Strings.Get("ShortcutTooSimple")
+            : hotkey.TypedCharacter() is { } typed ? Strings.Format("ShortcutTypes", typed)
+            : pcShortcuts.Concat(appShortcuts).FirstOrDefault(r => r != row && r.Hotkey == hotkey) is { } other
+                ? Strings.Format("ShortcutUsedBy", other.Peer?.Name ?? other.Name)
+            : null;
+        if (refusal is not null)
+        {
+            row.RecordingText = string.Join(" + ", hotkey.Parts);
+            row.RecordingNote = refusal;
+            row.IsRefused = true;
+            return;
+        }
+        settings.Shortcuts[row.Action] = hotkey.ToString();
+        settings.Save();
+        DevLog.Write($"Shortcut set: {hotkey} for {(GlobalHotkeys.PcOf(row.Action) is { } pc ? "ring " + pc[..Math.Min(8, pc.Length)] : row.Action)}");
+        StopRecording();
+    }
+
+    // A modifier let go: the row shows the ones still held (a refusal stays until the next keys).
+    private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
+    {
+        if (recording is not { } row) return;
+        e.Handled = true;
+        if (!row.IsRefused) ShowHeld(row, Keyboard.Modifiers);
+    }
+
+    // A click anywhere but in the box that records gives up.
+    private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (recording is null) return;
+        for (var element = e.OriginalSource as DependencyObject; element is not null;
+             element = element is Visual ? VisualTreeHelper.GetParent(element) : LogicalTreeHelper.GetParent(element))
+            if (element is FrameworkElement { Name: "RecordBox" }) return;
+        StopRecording();
+    }
+
+    private void Window_Deactivated(object? sender, EventArgs e) => StopRecording();
+
+    // ---- History ----
+
+    private void OnHistoryChanged(object? sender, EventArgs e) => ShowHistory();
+
+    private void ShowHistory()
+    {
+        var days = HistoryRow.Days(viewModel.History);
+        HistoryList.ItemsSource = days;
+        HistoryEmptyText.Visibility = days.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        HistoryClearButton.IsEnabled = days.Count > 0;
+    }
+
+    private void HistoryKeepBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!initialized) return;
+        settings.HistoryDays = Selected<int>(HistoryKeepBox);
+        settings.Save();
+        viewModel.History.KeepDays = settings.HistoryDays;
+        ShowHistory();
+    }
+
+    private void HistoryClear_Click(object sender, RoutedEventArgs e) => viewModel.History.Clear();
+
+    private void HistoryRingBack_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkContentElement)?.DataContext is HistoryRow row) viewModel.RingBack(row.PeerId);
     }
 
     // ---- Network ----

@@ -190,4 +190,44 @@
   <data name="ClassicRemovalText" xml:space="preserve"><value>LocalBell is also installed from GitHub on this PC, and only one can run at a time. Uninstall the GitHub version?
 
 LocalBell closes during the uninstall: start it again from the Start menu.</value></data>
+  <data name="PageShortcuts" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="PageHistory" xml:space="preserve"><value>History</value></data>
+  <data name="ShortcutsRingTitle" xml:space="preserve"><value>Ring a computer</value></data>
+  <data name="ShortcutsRingHint" xml:space="preserve"><value>Anywhere in Windows, even with the window closed. None at first: choose your own.</value></data>
+  <data name="ShortcutsAppHint" xml:space="preserve"><value>Open the window or the panel, do not disturb.</value></data>
+  <data name="ShortcutsNoPc" xml:space="preserve"><value>No computer found yet.</value></data>
+  <data name="ShortcutPanel" xml:space="preserve"><value>Open the quick panel</value></data>
+  <data name="ShortcutDnd" xml:space="preserve"><value>Do not disturb (on or off)</value></data>
+  <data name="ShortcutSet" xml:space="preserve"><value>Set</value></data>
+  <data name="ShortcutPress" xml:space="preserve"><value>Press the keys…</value></data>
+  <data name="ShortcutEscape" xml:space="preserve"><value>Esc to cancel</value></data>
+  <data name="ShortcutTaken" xml:space="preserve"><value>Already taken by another app: choose another one</value></data>
+  <data name="ShortcutTooSimple" xml:space="preserve"><value>Use two of Ctrl, Alt and Shift, or Win</value></data>
+  <data name="ShortcutTypes" xml:space="preserve"><value>On this keyboard it types “{0}”: choose another one</value></data>
+  <data name="ShortcutUsedBy" xml:space="preserve"><value>Already used for {0}</value></data>
+  <data name="KeyCtrl" xml:space="preserve"><value>Ctrl</value></data>
+  <data name="KeyAlt" xml:space="preserve"><value>Alt</value></data>
+  <data name="KeyShift" xml:space="preserve"><value>Shift</value></data>
+  <data name="KeyWin" xml:space="preserve"><value>Win</value></data>
+  <data name="HistoryKeepTitle" xml:space="preserve"><value>Keep the history</value></data>
+  <data name="HistoryKeepHint" xml:space="preserve"><value>Received and sent, on this computer only.</value></data>
+  <data name="HistoryKeepToday" xml:space="preserve"><value>Today only</value></data>
+  <data name="HistoryKeepDays" xml:space="preserve"><value>{0} days</value></data>
+  <data name="HistoryClear" xml:space="preserve"><value>Clear</value></data>
+  <data name="HistoryEmpty" xml:space="preserve"><value>No ring yet.</value></data>
+  <data name="HistoryToday" xml:space="preserve"><value>Today</value></data>
+  <data name="HistoryYesterday" xml:space="preserve"><value>Yesterday</value></data>
+  <data name="HistoryDayFormat" xml:space="preserve"><value>dddd, MMMM d</value></data>
+  <data name="HistoryRangYou" xml:space="preserve"><value>{0} rang you</value></data>
+  <data name="HistoryRangEveryone" xml:space="preserve"><value>{0} rang everyone</value></data>
+  <data name="HistoryYouRang" xml:space="preserve"><value>You rang {0}</value></data>
+  <data name="HistoryEveryone" xml:space="preserve"><value>everyone ({0})</value></data>
+  <data name="HistoryNoMessage" xml:space="preserve"><value>No message</value></data>
+  <data name="HistoryYourReply" xml:space="preserve"><value>You: {0}</value></data>
+  <data name="HistoryMissed" xml:space="preserve"><value>Missed</value></data>
+  <data name="HistoryClosed" xml:space="preserve"><value>Seen, closed without a reply</value></data>
+  <data name="HistoryUnanswered" xml:space="preserve"><value>No answer</value></data>
+  <data name="HistoryQuiet" xml:space="preserve"><value>Will not be disturbed</value></data>
+  <data name="HistoryFailed" xml:space="preserve"><value>Did not answer</value></data>
+  <data name="HistoryPart" xml:space="preserve"><value>{0}: {1}</value></data>
 </root>

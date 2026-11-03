@@ -7,7 +7,8 @@
         Width="880" SizeToContent="Height" ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="14"
         Foreground="{DynamicResource TextFillColorPrimaryBrush}" Background="{DynamicResource ApplicationBackgroundBrush}"
-        KeyDown="Window_KeyDown" Closed="Window_Closed">
+        KeyDown="Window_KeyDown" PreviewKeyDown="Window_PreviewKeyDown" PreviewKeyUp="Window_PreviewKeyUp"
+        PreviewMouseDown="Window_PreviewMouseDown" Deactivated="Window_Deactivated" Closed="Window_Closed">
 
   <!-- The cards of the Settings of PageCompose, on pages chosen from a menu on the left, as in the Windows 11 Settings
        app (the mock-ups the author approved on October 31, 2026). -->
@@ -211,6 +212,168 @@
         </DockPanel>
       </StackPanel>
     </DataTemplate>
+
+    <!-- A key of a shortcut, as a key cap. -->
+    <Style x:Key="KeyCap" TargetType="Border">
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="BorderThickness" Value="1,1,1,2" />
+      <Setter Property="Padding" Value="8,2" />
+      <Setter Property="MinWidth" Value="26" />
+      <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlStrongStrokeColorDefaultBrush}" />
+    </Style>
+
+    <!-- A row of Keyboard shortcuts (the author's choice A, November 3): the PC (its dot) or the action; on the right
+         "Définir", or its keys with a pencil and a bin, or the box that records them. -->
+    <DataTemplate x:Key="ShortcutRowTemplate" DataType="{x:Type vm:ShortcutRow}">
+      <StackPanel>
+        <Rectangle Style="{StaticResource CardDivider}" />
+        <DockPanel Style="{StaticResource CardSubRow}" MinHeight="34">
+          <Grid DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center">
+            <Button x:Name="SetButton" Content="{local:Tr ShortcutSet}" Width="110" Padding="12,5" HorizontalAlignment="Right"
+                    Click="SetShortcut_Click" />
+            <StackPanel x:Name="KeysPanel" Orientation="Horizontal" Visibility="Collapsed">
+              <ItemsControl ItemsSource="{Binding Keys}" Focusable="False" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock x:Name="Plus" Text="+" Margin="5,0" VerticalAlignment="Center"
+                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                      <Border Style="{StaticResource KeyCap}">
+                        <TextBlock Text="{Binding}" FontSize="12" HorizontalAlignment="Center" />
+                      </Border>
+                    </StackPanel>
+                    <DataTemplate.Triggers>
+                      <DataTrigger Binding="{Binding RelativeSource={RelativeSource PreviousData}}" Value="{x:Null}">
+                        <Setter TargetName="Plus" Property="Visibility" Value="Collapsed" />
+                      </DataTrigger>
+                    </DataTemplate.Triggers>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Style="{StaticResource SquareButton}" Margin="16,0,0,0" Padding="8,7" ToolTip="{local:Tr EditTooltip}"
+                      Click="SetShortcut_Click">
+                <TextBlock Style="{StaticResource Glyph}" Text="&#xE70F;" FontSize="14" />
+              </Button>
+              <Button Style="{StaticResource SquareButton}" Margin="6,0,0,0" Padding="8,7" ToolTip="{local:Tr DeleteTooltip}"
+                      Click="DeleteShortcut_Click">
+                <TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" FontSize="14" />
+              </Button>
+            </StackPanel>
+            <!-- While recording: the keys held show in it; Échap gives up. -->
+            <Border x:Name="RecordBox" Width="250" CornerRadius="4" BorderThickness="2" Padding="10,5" Visibility="Collapsed"
+                    BorderBrush="{DynamicResource AccentFillColorDefaultBrush}"
+                    Background="{DynamicResource ControlFillColorInputActiveBrush}">
+              <StackPanel>
+                <TextBlock Text="{Binding RecordingText}" FontSize="13" />
+                <TextBlock x:Name="RecordNote" Style="{StaticResource Secondary}" Text="{Binding RecordingNote}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </Grid>
+          <StackPanel VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+              <Ellipse x:Name="Dot" Width="8" Height="8" Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed"
+                       Fill="{DynamicResource TextFillColorTertiaryBrush}" />
+              <!-- A PC's name as it is now (renamed meanwhile), else the action's. -->
+              <TextBlock x:Name="NameText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                <TextBlock.Text>
+                  <PriorityBinding>
+                    <Binding Path="Peer.Name" />
+                    <Binding Path="Name" />
+                  </PriorityBinding>
+                </TextBlock.Text>
+              </TextBlock>
+            </StackPanel>
+            <TextBlock x:Name="TakenNote" Style="{StaticResource CardDescription}" Text="{local:Tr ShortcutTaken}" Visibility="Collapsed"
+                       Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+          </StackPanel>
+        </DockPanel>
+      </StackPanel>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding HasHotkey}" Value="True">
+          <Setter TargetName="SetButton" Property="Visibility" Value="Collapsed" />
+          <Setter TargetName="KeysPanel" Property="Visibility" Value="Visible" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsRecording}" Value="True">
+          <Setter TargetName="SetButton" Property="Visibility" Value="Collapsed" />
+          <Setter TargetName="KeysPanel" Property="Visibility" Value="Collapsed" />
+          <Setter TargetName="RecordBox" Property="Visibility" Value="Visible" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsRefused}" Value="True">
+          <Setter TargetName="RecordNote" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsPc}" Value="True">
+          <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+          <Setter TargetName="NameText" Property="Opacity" Value="0.6" />
+          <Setter TargetName="TakenNote" Property="Margin" Value="18,2,0,0" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Peer.Online}" Value="True">
+          <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+          <Setter TargetName="NameText" Property="Opacity" Value="1" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsTaken}" Value="True">
+          <Setter TargetName="TakenNote" Property="Visibility" Value="Visible" />
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <!-- A ring of History (the author's choice A, November 3, as a phone's calls): the arrow (towards this PC or away
+         from it), who and the message, then the time and what came of it; "Rappeler" on a ring missed. -->
+    <DataTemplate x:Key="HistoryRowTemplate" DataType="{x:Type vm:HistoryRow}">
+      <StackPanel>
+        <Rectangle x:Name="Line" Style="{StaticResource CardDivider}" />
+        <DockPanel Margin="16,9">
+          <Path x:Name="Arrow" DockPanel.Dock="Left" Data="M5,15 L15,5 M8,5 L15,5 L15,12" Width="20" Height="20" Margin="0,0,16,0"
+                VerticalAlignment="Center" StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                StrokeLineJoin="Round" Stroke="{DynamicResource TextFillColorSecondaryBrush}" />
+          <StackPanel DockPanel.Dock="Right" MaxWidth="320" Margin="16,0,0,0" VerticalAlignment="Center">
+            <TextBlock Style="{StaticResource Secondary}" Text="{Binding Time}" HorizontalAlignment="Right" />
+            <DockPanel HorizontalAlignment="Right" Margin="0,2,0,0">
+              <TextBlock x:Name="RingBackPart" DockPanel.Dock="Right" FontSize="12" Visibility="Collapsed"
+                         Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                <Run Text=" · " /><Hyperlink Click="HistoryRingBack_Click"><Run Text="{local:Tr RingBack}" /></Hyperlink>
+              </TextBlock>
+              <TextBlock x:Name="OutcomeText" FontSize="12" Text="{Binding Outcome}" TextTrimming="CharacterEllipsis"
+                         ToolTip="{Binding Outcome}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </DockPanel>
+          </StackPanel>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock TextTrimming="CharacterEllipsis"><Run Text="{Binding Before, Mode=OneWay}" /><Run
+                Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{Binding After, Mode=OneWay}" /></TextBlock>
+            <TextBlock Style="{StaticResource Secondary}" Margin="0,2,0,0" Text="{Binding Message}" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </DockPanel>
+      </StackPanel>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding RelativeSource={RelativeSource PreviousData}}" Value="{x:Null}">
+          <Setter TargetName="Line" Property="Visibility" Value="Collapsed" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Received}" Value="True">
+          <Setter TargetName="Arrow" Property="Data" Value="M15,5 L5,15 M5,8 L5,15 L12,15" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Tone}" Value="Accent">
+          <Setter TargetName="OutcomeText" Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Tone}" Value="Success">
+          <Setter TargetName="OutcomeText" Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Tone}" Value="Caution">
+          <Setter TargetName="OutcomeText" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Tone}" Value="Critical">
+          <Setter TargetName="OutcomeText" Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Missed}" Value="True">
+          <Setter TargetName="Arrow" Property="Stroke" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+          <Setter TargetName="RingBackPart" Property="Visibility" Value="Visible" />
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
   </Window.Resources>
 
   <Grid>
@@ -261,6 +424,18 @@
         <StackPanel Orientation="Horizontal">
           <TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8BD;" />
           <TextBlock Text="{local:Tr PageMessages}" VerticalAlignment="Center" />
+        </StackPanel>
+      </ListBoxItem>
+      <ListBoxItem AutomationProperties.Name="{local:Tr PageShortcuts}">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Style="{StaticResource MenuIcon}" Text="&#xE765;" />
+          <TextBlock Text="{local:Tr PageShortcuts}" VerticalAlignment="Center" />
+        </StackPanel>
+      </ListBoxItem>
+      <ListBoxItem AutomationProperties.Name="{local:Tr PageHistory}">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Style="{StaticResource MenuIcon}" Text="&#xE81C;" />
+          <TextBlock Text="{local:Tr PageHistory}" VerticalAlignment="Center" />
         </StackPanel>
       </ListBoxItem>
       <ListBoxItem AutomationProperties.Name="{local:Tr PageNetwork}">
@@ -567,6 +742,79 @@
               <ItemsControl x:Name="RepliesList" ItemTemplate="{StaticResource EditableRow}" Focusable="False" />
             </StackPanel>
           </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Keyboard shortcuts (the author's choice A, November 3): one a PC, then the app's own; none at first. At most as
+           tall as the other pages (they all take the height of the tallest): a long list of PCs scrolls. -->
+      <ScrollViewer x:Name="ShortcutsPage" Grid.Row="1" Style="{StaticResource Page}"
+                    MaxHeight="{Binding ActualHeight, ElementName=GeneralPage}">
+        <StackPanel Style="{StaticResource PageContent}">
+          <Border Style="{StaticResource SettingCard}" Padding="0">
+            <StackPanel>
+              <DockPanel Margin="16,12">
+                <Path DockPanel.Dock="Left" Data="{StaticResource BellGeometry}" Width="20" Height="20" Stretch="Uniform"
+                      Margin="0,0,16,0" Fill="{DynamicResource TextFillColorPrimaryBrush}" />
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{local:Tr ShortcutsRingTitle}" />
+                  <TextBlock Style="{StaticResource CardDescription}" Text="{local:Tr ShortcutsRingHint}" />
+                </StackPanel>
+              </DockPanel>
+              <ItemsControl x:Name="PcShortcutsList" ItemTemplate="{StaticResource ShortcutRowTemplate}" Focusable="False" />
+              <StackPanel x:Name="NoPcRow" Visibility="Collapsed">
+                <Rectangle Style="{StaticResource CardDivider}" />
+                <TextBlock Style="{StaticResource CardDescription}" Margin="52,10,16,10" Text="{local:Tr ShortcutsNoPc}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource SettingCard}" Padding="0">
+            <StackPanel>
+              <DockPanel Margin="16,12">
+                <TextBlock DockPanel.Dock="Left" Style="{StaticResource CardIcon}" Text="&#xE765;" />
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="LocalBell" />
+                  <TextBlock Style="{StaticResource CardDescription}" Text="{local:Tr ShortcutsAppHint}" />
+                </StackPanel>
+              </DockPanel>
+              <ItemsControl x:Name="AppShortcutsList" ItemTemplate="{StaticResource ShortcutRowTemplate}" Focusable="False" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- History (the author's choice A, November 3): how long it is kept, then the rings by day. At most as tall as
+           the other pages: it scrolls. -->
+      <ScrollViewer x:Name="HistoryPage" Grid.Row="1" Style="{StaticResource Page}"
+                    MaxHeight="{Binding ActualHeight, ElementName=GeneralPage}">
+        <StackPanel Style="{StaticResource PageContent}">
+          <Border Style="{StaticResource SettingCard}">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Left" Style="{StaticResource CardIcon}" Text="&#xE81C;" />
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                <ComboBox x:Name="HistoryKeepBox" Width="190" VerticalAlignment="Center"
+                          SelectionChanged="HistoryKeepBox_SelectionChanged" AutomationProperties.Name="{local:Tr HistoryKeepTitle}" />
+                <Button x:Name="HistoryClearButton" Content="{local:Tr HistoryClear}" Margin="8,0,0,0" Padding="12,5"
+                        VerticalAlignment="Center" Click="HistoryClear_Click" />
+              </StackPanel>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{local:Tr HistoryKeepTitle}" />
+                <TextBlock Style="{StaticResource CardDescription}" Text="{local:Tr HistoryKeepHint}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <TextBlock x:Name="HistoryEmptyText" Style="{StaticResource CardDescription}" Margin="2,14,0,0" Text="{local:Tr HistoryEmpty}" />
+          <ItemsControl x:Name="HistoryList" Focusable="False">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type vm:HistoryDay}">
+                <StackPanel>
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="2,14,0,8" />
+                  <Border Style="{StaticResource Card}">
+                    <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource HistoryRowTemplate}" Focusable="False" />
+                  </Border>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
       </ScrollViewer>
 

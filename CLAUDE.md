@@ -22,7 +22,7 @@ Version **0.1.2**, tagged `v0.1.2` on the shop PC (November 3), not pushed nor r
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
 repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
-- Done: the network (`LocalBell.Core`, tested: 113 tests with the update feed), the icon, the app: the list window, the popup (discreet
+- Done: the network (`LocalBell.Core`, tested: 122 tests with the update feed and the history), the icon, the app: the list window, the popup (discreet
   or loud), the ring sounds, the bell near the clock with its menu, "do not disturb" (moon button, banner, menu),
   favourites (star), single instance, **Settings on six pages** (as approved: name of the PC, start with Windows,
   do not disturb, language, theme; sound + own WAV/MP3 file, volume, ring when Windows is muted, repeat; popup style
@@ -77,9 +77,13 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
 - **0.1.1** (October 31, after his first install): the ring repeated twice by default (was 3), a click on the bell near
   the clock opens the widget's quick panel (or the window, a setting), the music box (a fourth bell, for Halloween).
 - **0.1.2** (November 3): the update shown in the quick panel and the menu, the widget on a small taskbar, the
-  fixes of the audit's list C, "Oublier ce poste". Next: pushed and released from his home; installed on the two PCs.
-  Ideas for later: a remembered window place; **keyboard shortcuts to ring each PC** (his idea, October 31: one per
-  PC, set in Settings; global shortcuts, so mind the clashes with other apps).
+  fixes of the audit's list C, "Oublier ce poste". Installed on the shop PC (November 3). Next: pushed and released from his home; BUREAU3.
+- **History and Keyboard shortcuts** (November 3, after 0.1.2, his yes to my ideas, then "A et A" among the mock-ups
+  `.local\maquettes\hist-*`, `racc-*`): two pages of Settings (nine now), see the design decisions. Not committed,
+  not in a build he installed; seen in test-a by UI Automation (`.local\shortcuts-history.ps1`), a shortcut not set
+  (that takes keys) nor a ring logged (that takes a ring on his screen).
+  Ideas for later: a remembered window place; **groups** ("Sonner le labo", "Sonner la caisse" instead of
+  everyone: "bonne idée, on garde pour plus tard", November 3).
 
 ## Design decisions (approved by the author, October 31, 2026)
 
@@ -106,6 +110,12 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
   the app was made, the others proposed kept in `.local\sons\`; own WAV/MP3, volume of its own, ring when Windows is muted,
   repeat), Popup (style, corner, screen, closing), Messages (ready-made messages, the three replies), Network (this
   PC's address, PCs added by hand, PCs found, refresh), About.
+- **Keyboard shortcuts and History, two more pages** (November 3, his choice A for both): after Messages,
+  "Raccourcis clavier" (one row a PC of the list with "Définir", its keys as key caps with a pencil and a bin, or the
+  box that records them; then LocalBell's own: open the window, open the quick panel, "do not disturb" on or off.
+  **None by default**, his wish; none for "everyone", one key would ring them all), then "Historique" (as a phone's
+  calls: an arrow towards this PC or away, "Caisse vous a sonné", the message, the time and what came of it in the
+  colours of the list, "Manquée · Rappeler" in red; by day; kept today only, 7 days (default) or 30, "Effacer").
 - **A click on the bell near the clock opens the widget's quick panel**, above the bell (the author, October 31, after
   his first install), or the window: Settings → General → "Clic sur l'icône", as ScreenClip's. The right click
   always opens the menu.
@@ -152,6 +162,10 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     between two networks joins them all). PCs not heard for 45 s get a hello; leaving, a PC tells the others (UDP
     and HTTP). Rings carry an id: one received twice (two addresses) shows once. Started on the thread pool; events
     come on pool threads.
+  - `History/RingLog`: the rings received and sent for Settings → History, `history.json` beside the settings (this
+    PC only; it holds the messages, the developer log never does), the days kept trimmed; a reply that comes before
+    its ring is logged waits a minute for it; a ring still "ringing" 2 minutes after reads as unanswered (LocalBell
+    stopped, or a newer ring of that PC took its popup). Fed by `MainViewModel`, written 2 s after a change and on exit.
   - `Updates/UpdateFeed` + `SemanticVersion` (PageCompose's): the GitHub "list releases" API of
     `quentinperou/LocalBell`, the asset `LocalBell-Setup-<version>.exe` and its SHA-256 (`digest`), the newest
     version of the channel (never a downgrade), the download.
@@ -211,13 +225,22 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
   - `Menus.xaml` + `Services/PopupMenu`: the menus of the bell near the clock and of the widget, drawn as Windows 11's
     in Windows' mode (NowPlaying's, with sub-menus), opened from a tiny window activated first, above the taskbar for
     the widget.
-  - `SettingsWindow`: seven pages from a menu on the left (PageCompose's structure; Updates since October 31), each
-    change applied and saved at once; a language change builds the windows again (texts are read when a window is
-    built).
+  - `SettingsWindow`: nine pages from a menu on the left (PageCompose's structure; Updates since October 31, Keyboard
+    shortcuts and History since November 3), each change applied and saved at once; a language change builds the
+    windows again (texts are read when a window is built). Those two pages are at most as tall as General (`MaxHeight`
+    bound to its `ActualHeight`): they scroll instead of making the window taller. (A panel that asked no height and
+    measured its child again while arranging it made a layout loop: Settings took no mouse at all, November 3.)
+  - `Services/GlobalHotkeys` (+ `Hotkey`): the shortcuts, `RegisterHotKey` on a message-only window; saved in
+    `settings.json` → `Shortcuts` ("ring:<id>", "open", "panel", "dnd" → "Ctrl+Alt+D1"). A shortcut another app holds
+    shows "Déjà pris…" on its row; Settings refuses too few keys (two of Ctrl, Alt, Shift, or Win, or F13–F24: Ctrl + C
+    would take copying from every app), the keys that type a character with AltGr on the keyboard in use (Ctrl + Alt
+    + 0 is "@" on a French one: `ToUnicodeEx`), and another row's keys; while a row records, none is registered (the
+    keys must reach Settings). A ring by shortcut is the widget's favourite ring (its row tells what happened; nothing
+    shows with the window closed). A forgotten PC loses its shortcut.
   - `Properties/Strings.resx` + `Strings.fr.resx`, `{local:Tr Key}` in XAML, `Strings.Get/Format/Count` in code.
-- `tests/LocalBell.Core.Tests` (xUnit, 113 tests): the protocol, the addresses, the directory, the server, `BellNode`
-  end to end (several nodes on 127.0.0.1, without UDP: nothing leaves the PC), the update feed, and the parity of the
-  two languages.
+- `tests/LocalBell.Core.Tests` (xUnit, 122 tests): the protocol, the addresses, the directory, the server, `BellNode`
+  end to end (several nodes on 127.0.0.1, without UDP: nothing leaves the PC), the update feed, the history, and the
+  parity of the two languages.
 
 ## Precautions
 
