@@ -35,6 +35,7 @@ public partial class SettingsWindow : Window
     private readonly bool initialized;
     private bool updating;
     private ShortcutRow? recording; // the shortcut whose keys are being pressed
+    private KeyRecorder? recorder; // its keys, read before Windows acts on them
 
     public SettingsWindow(MainViewModel viewModel, BellNode node, string? profile, int page = 0)
     {
@@ -513,7 +514,8 @@ public partial class SettingsWindow : Window
         ShowHeld(row, ModifierKeys.None);
         row.IsRecording = true;
         TheApp.Shortcuts?.Suspend();
-        // The button clicked is hidden now: the keys go to the window.
+        recorder = new KeyRecorder(OnShortcutKeys);
+        // Without the hook, the keys go to the window: the button clicked is hidden now.
         Dispatcher.BeginInvoke(() => Keyboard.Focus(this), System.Windows.Threading.DispatcherPriority.Input);
     }
 
@@ -533,6 +535,8 @@ public partial class SettingsWindow : Window
         if (recording is null) return;
         recording.IsRecording = false;
         recording = null;
+        recorder?.End();
+        recorder = null;
         TheApp.ApplyShortcuts();
         ShowShortcuts();
     }
@@ -549,30 +553,22 @@ public partial class SettingsWindow : Window
     /// <summary>
     /// While a row records: the modifiers held show in it; a key with them is the shortcut, unless it is not enough keys,
     /// types a character on this keyboard (AltGr), or is another row's: then the row says why and waits for others.
+    /// <paramref name="key"/> is null for a modifier, pressed or let go (a refusal stays until the next keys).
     /// </summary>
-    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    private void OnShortcutKeys(ModifierKeys modifiers, Key? key, bool down)
     {
         if (recording is not { } row) return;
-        e.Handled = true;
-        var key = e.Key switch
+        if (key is not { } pressed)
         {
-            Key.System => e.SystemKey,
-            Key.ImeProcessed => e.ImeProcessedKey,
-            Key.DeadCharProcessed => e.DeadCharProcessedKey,
-            _ => e.Key,
-        };
-        var modifiers = Keyboard.Modifiers;
-        if (key == Key.Escape && modifiers == ModifierKeys.None)
+            if (down || !row.IsRefused) ShowHeld(row, modifiers);
+            return;
+        }
+        if (pressed == Key.Escape && modifiers == ModifierKeys.None)
         {
             StopRecording();
             return;
         }
-        if (key == Key.None || Hotkey.IsModifier(key))
-        {
-            ShowHeld(row, modifiers);
-            return;
-        }
-        var hotkey = new Hotkey(modifiers, key);
+        var hotkey = new Hotkey(modifiers, pressed);
         string? refusal = !hotkey.IsEnoughKeys ? Strings.Get("ShortcutTooSimple")
             : hotkey.TypedCharacter() is { } typed ? Strings.Format("ShortcutTypes", typed)
             : pcShortcuts.Concat(appShortcuts).FirstOrDefault(r => r != row && r.Hotkey == hotkey) is { } other
@@ -591,13 +587,32 @@ public partial class SettingsWindow : Window
         StopRecording();
     }
 
-    // A modifier let go: the row shows the ones still held (a refusal stays until the next keys).
+    // Without the hook (Windows refused it): the keys of the window. WPF does not count Win among the modifiers.
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (recording is null) return;
+        e.Handled = true;
+        if (recorder is { IsHooked: true }) return;
+        var key = e.Key switch
+        {
+            Key.System => e.SystemKey,
+            Key.ImeProcessed => e.ImeProcessedKey,
+            Key.DeadCharProcessed => e.DeadCharProcessedKey,
+            _ => e.Key,
+        };
+        if (e.IsRepeat || key == Key.None) return;
+        OnShortcutKeys(HeldModifiers(), Hotkey.IsModifier(key) ? null : key, true);
+    }
+
     private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
     {
-        if (recording is not { } row) return;
+        if (recording is null) return;
         e.Handled = true;
-        if (!row.IsRefused) ShowHeld(row, Keyboard.Modifiers);
+        if (recorder is not { IsHooked: true }) OnShortcutKeys(HeldModifiers(), null, false);
     }
+
+    private static ModifierKeys HeldModifiers() =>
+        Keyboard.Modifiers | (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin) ? ModifierKeys.Windows : ModifierKeys.None);
 
     // A click anywhere but in the box that records gives up.
     private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)

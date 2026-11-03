@@ -18,7 +18,8 @@ paraît plus cohérent"): code, protocol tag and API path, settings folder, inst
 
 ## Project status (October 31, 2026)
 
-Version **0.1.2**, tagged `v0.1.2` on the shop PC (November 3), not pushed nor released yet. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
+Version **0.1.4**, tagged `v0.1.4` on the shop PC (November 3; `v0.1.2` before it; no 0.1.3 tag, a build for his
+try only), not pushed nor released yet. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
 repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
@@ -79,9 +80,11 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
 - **0.1.2** (November 3): the update shown in the quick panel and the menu, the widget on a small taskbar, the
   fixes of the audit's list C, "Oublier ce poste". Installed on the shop PC (November 3). Next: pushed and released from his home; BUREAU3.
 - **History and Keyboard shortcuts** (November 3, after 0.1.2, his yes to my ideas, then "A et A" among the mock-ups
-  `.local\maquettes\hist-*`, `racc-*`): two pages of Settings (nine now), see the design decisions. Not committed,
-  not in a build he installed; seen in test-a by UI Automation (`.local\shortcuts-history.ps1`), a shortcut not set
-  (that takes keys) nor a ring logged (that takes a ring on his screen).
+  `.local\maquettes\hist-*`, `racc-*`): two pages of Settings (nine now), see the design decisions. Committed (`004fc22`);
+  built as 0.1.3 for his try on the shop PC: the Win key could not be used in a shortcut, fixed (`KeyRecorder`).
+  **0.1.4** (November 3) with both: installed on the shop PC, committed and tagged `v0.1.4` at his "ok tag la
+  version". Seen in test-a by UI Automation (`.local\shortcuts-history.ps1`); a ring in the history not tried yet.
+  Next: pushed and released from his home (`v0.1.4` the first release); BUREAU3.
   Ideas for later: a remembered window place; **groups** ("Sonner le labo", "Sonner la caisse" instead of
   everyone: "bonne idée, on garde pour plus tard", November 3).
 
@@ -234,8 +237,11 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     `settings.json` → `Shortcuts` ("ring:<id>", "open", "panel", "dnd" → "Ctrl+Alt+D1"). A shortcut another app holds
     shows "Déjà pris…" on its row; Settings refuses too few keys (two of Ctrl, Alt, Shift, or Win, or F13–F24: Ctrl + C
     would take copying from every app), the keys that type a character with AltGr on the keyboard in use (Ctrl + Alt
-    + 0 is "@" on a French one: `ToUnicodeEx`), and another row's keys; while a row records, none is registered (the
-    keys must reach Settings). A ring by shortcut is the widget's favourite ring (its row tells what happened; nothing
+    + 0 is "@" on a French one: `ToUnicodeEx`), and another row's keys; while a row records, none is registered, and `Services/KeyRecorder` (a
+    low-level keyboard hook, that time only) reads the keys before Windows: WPF does not count Win as a modifier, and
+    Windows acts on its own (Win alone opens Start, Win + E the Explorer) before any window sees them; so Win + E is
+    recorded, then said "Déjà pris par Windows…" (the author, November 3: "on ne peut pas utiliser la touche Windows"). No
+    key reaches any app while it records: 30 s at most, then the window's own keys. A ring by shortcut is the widget's favourite ring (its row tells what happened; nothing
     shows with the window closed). A forgotten PC loses its shortcut.
   - `Properties/Strings.resx` + `Strings.fr.resx`, `{local:Tr Key}` in XAML, `Strings.Get/Format/Count` in code.
 - `tests/LocalBell.Core.Tests` (xUnit, 122 tests): the protocol, the addresses, the directory, the server, `BellNode`

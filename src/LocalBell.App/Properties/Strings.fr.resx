@@ -201,7 +201,7 @@ LocalBell se ferme pendant la désinstallation : relancez-le ensuite depuis le m
   <data name="ShortcutSet" xml:space="preserve"><value>Définir</value></data>
   <data name="ShortcutPress" xml:space="preserve"><value>Appuyez sur les touches…</value></data>
   <data name="ShortcutEscape" xml:space="preserve"><value>Échap pour annuler</value></data>
-  <data name="ShortcutTaken" xml:space="preserve"><value>Déjà pris par une autre application : choisissez-en un autre</value></data>
+  <data name="ShortcutTaken" xml:space="preserve"><value>Déjà pris par Windows ou une autre application : choisissez-en un autre</value></data>
   <data name="ShortcutTooSimple" xml:space="preserve"><value>Combinez deux touches parmi Ctrl, Alt et Maj, ou Win</value></data>
   <data name="ShortcutTypes" xml:space="preserve"><value>Sur ce clavier, cela écrit « {0} » : choisissez-en un autre</value></data>
   <data name="ShortcutUsedBy" xml:space="preserve"><value>Déjà utilisé pour {0}</value></data>

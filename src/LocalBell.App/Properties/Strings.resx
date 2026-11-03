@@ -201,7 +201,7 @@ LocalBell closes during the uninstall: start it again from the Start menu.</valu
   <data name="ShortcutSet" xml:space="preserve"><value>Set</value></data>
   <data name="ShortcutPress" xml:space="preserve"><value>Press the keys…</value></data>
   <data name="ShortcutEscape" xml:space="preserve"><value>Esc to cancel</value></data>
-  <data name="ShortcutTaken" xml:space="preserve"><value>Already taken by another app: choose another one</value></data>
+  <data name="ShortcutTaken" xml:space="preserve"><value>Already taken by Windows or another app: choose another one</value></data>
   <data name="ShortcutTooSimple" xml:space="preserve"><value>Use two of Ctrl, Alt and Shift, or Win</value></data>
   <data name="ShortcutTypes" xml:space="preserve"><value>On this keyboard it types “{0}”: choose another one</value></data>
   <data name="ShortcutUsedBy" xml:space="preserve"><value>Already used for {0}</value></data>
