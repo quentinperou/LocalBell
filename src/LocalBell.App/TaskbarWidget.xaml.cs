@@ -41,6 +41,8 @@ public partial class TaskbarWidget : Window
     private TaskbarState? state;
     private Brush idle = Brushes.Transparent;
     private Brush hover = Brushes.Transparent;
+    private DateTime transparentAt;
+    private int transparentResult; // what DWM said the last time it was asked to compose it see-through
 
     /// <param name="appProcessId">The app's process: its windows are not widgets of other apps.</param>
     public TaskbarWidget(int appProcessId)
@@ -63,6 +65,8 @@ public partial class TaskbarWidget : Window
                 buttonsAgainTimer.Start(); // once they have slid to their new places
             }
             else if (DateTime.UtcNow - buttonsFoundAt > TimeSpan.FromSeconds(10)) FindTaskbarButtons();
+            // See-through asked again now and then: a widget made at the start of Windows drew black (November 4).
+            if (DateTime.UtcNow - transparentAt > TimeSpan.FromSeconds(10)) KeepTransparent();
             Place();
         };
         othersTimer.Start();
@@ -83,6 +87,14 @@ public partial class TaskbarWidget : Window
             part.MouseLeave += (_, _) => part.Background = idle;
         }
         ApplyColors();
+        // The graphics of the PC became other (the graphics card ready at last, a remote session): the widget ends, and
+        // the app starts a new one, drawn with them from the start (the author, November 4: a black square in place of the
+        // widget made with Windows, gone with a widget started again).
+        RenderCapability.TierChanged += (_, _) =>
+        {
+            Log?.Invoke($"Widget: graphics tier now {RenderCapability.Tier >> 16}, made again");
+            Close();
+        };
     }
 
     /// <summary>The bell or the arrow: the app opens or closes its flyout above the widget (its left edge, the taskbar's top).</summary>
@@ -161,6 +173,8 @@ public partial class TaskbarWidget : Window
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(style | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE));
         HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
         KeepTransparent();
+        Log?.Invoke($"Widget made: graphics tier {RenderCapability.Tier >> 16} (0: no graphics card, nothing see-through)"
+            + $", see-through {(transparentResult == 0 ? "yes" : $"refused by DWM (0x{transparentResult:X8})")}");
         SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, Tray);
 
         // An app bar that takes no room: Windows tells it when an app goes full screen on its screen.
@@ -180,9 +194,14 @@ public partial class TaskbarWidget : Window
     /// </summary>
     private void KeepTransparent()
     {
+        transparentAt = DateTime.UtcNow;
+        if (hwnd == IntPtr.Zero) return;
         if (HwndSource.FromHwnd(hwnd)?.CompositionTarget is { } target) target.BackgroundColor = Colors.Transparent;
         var margins = new MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
-        DwmExtendFrameIntoClientArea(hwnd, ref margins);
+        int result = DwmExtendFrameIntoClientArea(hwnd, ref margins);
+        if (result != transparentResult && hwnd != IntPtr.Zero)
+            Log?.Invoke(result == 0 ? "Widget see-through again" : $"Widget see-through refused by DWM (0x{result:X8})");
+        transparentResult = result;
         int backdrop = DWMSBT_NONE, corners = DWMWCP_DONOTROUND, border = DWMWA_COLOR_NONE;
         DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ref backdrop, sizeof(int));
         DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref corners, sizeof(int));

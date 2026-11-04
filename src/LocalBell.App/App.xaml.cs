@@ -162,7 +162,7 @@ public partial class App : Application
 
         MainWindow = new MainWindow(viewModel);
         if (!hidden) MainWindow.Show();
-        if (withWidget) StartWidget();
+        if (withWidget) StartWidget(startedWithWindows: hidden);
         shortcuts = new GlobalHotkeys(OnShortcut);
         ApplyShortcuts();
         viewModel.ShortcutsChanged += (_, _) => ApplyShortcuts();
@@ -195,9 +195,11 @@ public partial class App : Application
     /// The widget in the taskbar, in a process of its own owned by the taskbar (<see cref="TaskbarHost"/>): it shows
     /// what this app sends and gives its clicks back; its flyout and its menu open here.
     /// </summary>
-    private void StartWidget()
+    private void StartWidget(bool startedWithWindows)
     {
         taskbar = new TaskbarHost(Dispatcher);
+        // Made in the first minutes of the session, it once drew black where it is see-through: made again then.
+        if (startedWithWindows) taskbar.StartAgainAfter(TimeSpan.FromSeconds(90));
         taskbar.FlyoutRequested += ToggleFlyout;
         taskbar.RingRequested += (_, _) =>
         {

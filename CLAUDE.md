@@ -85,6 +85,8 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
   **0.1.4** (November 3) with both: installed on the shop PC, committed and tagged `v0.1.4` at his "ok tag la
   version". Seen in test-a by UI Automation (`.local\shortcuts-history.ps1`); a ring in the history not tried yet.
   Next: pushed and released from his home (`v0.1.4` the first release); BUREAU3.
+- **0.1.5** (November 4, built and installed on the shop PC, not committed): his widget, started with Windows, was a black square (see the
+  widget in Architecture): it is made again once 90 s after a start with Windows.
   Ideas for later: a remembered window place; **groups** ("Sonner le labo", "Sonner la caisse" instead of
   everyone: "bonne idée, on garde pour plus tard", November 3).
 
@@ -209,7 +211,10 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     activate its flyout and its menu), its placement for the developer log ("log"); a ping a second, a widget silent
     2 s is killed (the taskbar free again) and started again (1 s, then 2, 4… up to 60 s while it keeps failing). Tried
     by suspending it: killed after 2.3 s, a new one 2 s later. It quits when the pipe closes (the app gone) or its
-    taskbar does (Explorer restarted). Made at its first showing, out of sight, with its content (made beforehand,
+    taskbar does (Explorer restarted). Started with Windows, the app starts it anew once after 90 s (November 4: the one
+    made at sign-in drew black where it is see-through, a black square on his taskbar, gone with a widget started again;
+    what was not ready is not known: the developer log now says the graphics tier and whether DWM took the see-through,
+    asked again every 10 s; a change of the graphics tier makes the widget anew too). Made at its first showing, out of sight, with its content (made beforehand,
     empty, Windows held it to 136 px). `WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE` (`WM_MOUSEACTIVATE` → `MA_NOACTIVATE`),
     topmost, put back on top at each foreground change (`SetWinEventHook`), an app bar without room for
     `ABN_FULLSCREENAPP`, transparent through DWM (`ThemeMode="None"`), the arrow pointer (no hand, as the taskbar's

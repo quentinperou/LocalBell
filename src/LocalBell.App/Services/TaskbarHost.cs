@@ -58,6 +58,25 @@ public sealed class TaskbarHost : IDisposable
     /// <summary>A right click: the menu of the bell near the clock, above the taskbar (its top).</summary>
     public event Action<int>? MenuRequested;
 
+    /// <summary>
+    /// The widget process started anew once, <paramref name="after"/> from now: LocalBell started with Windows, and the
+    /// widget made in the first minutes of the session once drew black where it is see-through (the author, November 4:
+    /// a black square on the taskbar, gone with a widget started again; what was not ready, the graphics or DWM, is not
+    /// known).
+    /// </summary>
+    public void StartAgainAfter(TimeSpan after)
+    {
+        var once = new DispatcherTimer { Interval = after };
+        once.Tick += (_, _) =>
+        {
+            once.Stop();
+            if (disposed || process is not { } running) return;
+            DevLog.Write("Widget process started again once, LocalBell having started with Windows");
+            End(running);
+        };
+        once.Start();
+    }
+
     /// <summary>What the widget shows. <paramref name="enabled"/>: the widget process runs (the widget is on).</summary>
     public void Update(TaskbarState state, bool enabled)
     {
