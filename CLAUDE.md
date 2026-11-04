@@ -85,8 +85,16 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
   **0.1.4** (November 3) with both: installed on the shop PC, committed and tagged `v0.1.4` at his "ok tag la
   version". Seen in test-a by UI Automation (`.local\shortcuts-history.ps1`); a ring in the history not tried yet.
   Next: pushed and released from his home (`v0.1.4` the first release); BUREAU3.
-- **0.1.5** (November 4, built and installed on the shop PC, not committed): his widget, started with Windows, was a black square (see the
+- **0.1.5** (November 4, built and installed on the shop PC, committed `3d95c9a`, no tag until his next start of
+  Windows): his widget, started with Windows, was a black square (see the
   widget in Architecture): it is made again once 90 s after a start with Windows.
+- **0.1.6** (November 4, installed on the shop PC, not committed): with LocalBell running, the right-click menus of
+  every other app went behind the taskbar (fine once it quit): the widget, raised every 2 s and at each change of the
+  window in front, took the taskbar it belongs to over them. Raised alone now (`SWP_NOOWNERZORDER`). Checked with a
+  topmost test window laid over the taskbar (`WindowFromPoint`): under 0.1.5 the taskbar was over it at once; under
+  0.1.6 it stayed in front, the author: "ça a l'air corrigé !". NowPlaying's widget, the same technique, may do the
+  same (the taskbar came back over the test window twice in 6 s with NowPlaying.Widgets running): to look at in its
+  own project. Tag `v0.1.6` after his next start of Windows (the black square of 0.1.5).
   Ideas for later: a remembered window place; **groups** ("Sonner le labo", "Sonner la caisse" instead of
   everyone: "bonne idée, on garde pour plus tard", November 3).
 
@@ -216,7 +224,9 @@ The pictures are in `.local\maquettes\` (git-ignored, made by `.local\mockups.cs
     what was not ready is not known: the developer log now says the graphics tier and whether DWM took the see-through,
     asked again every 10 s; a change of the graphics tier makes the widget anew too). Made at its first showing, out of sight, with its content (made beforehand,
     empty, Windows held it to 136 px). `WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE` (`WM_MOUSEACTIVATE` → `MA_NOACTIVATE`),
-    topmost, put back on top at each foreground change (`SetWinEventHook`), an app bar without room for
+    topmost, put back on top at each foreground change (`SetWinEventHook`), alone (`SWP_NOOWNERZORDER`; moved every 2 s
+    without a change of z-order): raised with it, the taskbar came over the menus of every other app (November 4,
+    fixed in 0.1.6), an app bar without room for
     `ABN_FULLSCREENAPP`, transparent through DWM (`ThemeMode="None"`), the arrow pointer (no hand, as the taskbar's
     buttons); placed after the Widgets (weather) button found by UI Automation, else (Windows 10, icons aligned left,
     or Settings → near the clock) left of `TrayNotifyWnd` and of the weather (with the icons on the left Windows puts

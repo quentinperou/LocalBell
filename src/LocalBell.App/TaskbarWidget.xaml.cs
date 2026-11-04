@@ -234,8 +234,10 @@ public partial class TaskbarWidget : Window
             LogPlace(fullScreen ? "hidden (full screen)" : autoHide ? "hidden (taskbar away)" : "hidden (no horizontal taskbar)");
             return;
         }
-        if (!IsVisible) Show();
-        SetWindowPos(hwnd, HWND_TOPMOST, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+        bool shown = !IsVisible;
+        if (shown) Show();
+        // Moved only: its place in the z-order is KeepOnTop's. Never its owner with it (see KeepOnTop).
+        SetWindowPos(hwnd, HWND_TOPMOST, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | (shown ? 0 : SWP_NOZORDER));
         if (autoHide) autoHideTimer.Start();
         else autoHideTimer.Stop();
         LogPlace($"at {x},{y}; {placeDetail}");
@@ -443,14 +445,17 @@ public partial class TaskbarWidget : Window
         return ((int)Math.Round(bounds.Left), (int)Math.Round(bounds.Right));
     }
 
+    // Raised alone: an owned window brought to the top takes its owner just under it, and the taskbar came over the menus
+    // of every other app, raised with the widget at each change of the window in front and every 2 s (the author,
+    // November 4: "les menus clic droit de tout le reste passent derrière la barre des tâches", fine once LocalBell quit).
     private void KeepOnTop()
     {
         if (!IsVisible) return;
-        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
         // The window in front may still be settling: again when the UI is idle.
         Dispatcher.BeginInvoke(() =>
         {
-            if (IsVisible) SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+            if (IsVisible) SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
         }, DispatcherPriority.ApplicationIdle);
     }
 
