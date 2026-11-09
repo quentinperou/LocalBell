@@ -3,8 +3,9 @@
 What goes into Partner Center for **LocalBell**, page by page, ready to paste (as NowPlaying's). Kept here so that the
 next submissions start from it. The package: `dist\store\LocalBell_<version>.0_x64.msix` (`scripts\build-store.ps1`).
 
-Before the first submission: reserve the name in Partner Center (the same account as NowPlaying), then check that
-`Identity` in `store/AppxManifest.xml` is the one of the Product identity page (Name, Publisher).
+The name "LocalBell" is reserved in Partner Center (the same account as NowPlaying, November 9, 2026); its Product
+identity is the one of `store/AppxManifest.xml`: Name `QuentinPerou.LocalBell`, Publisher
+`CN=E4BBF1EB-8886-49FD-8647-36786CAF5AC5`, PublisherDisplayName `QuentinPerou`.
 
 ## Pricing and availability
 
@@ -30,7 +31,8 @@ to everything else (violence, location, purchases, unrestricted web access). Exp
 
 ## Packages
 
-Upload the `.msix`. Device family: Windows 10/11 Desktop (the package needs Windows 10 2004).
+Upload the `.msix` (the first one: `LocalBell_0.1.6.0_x64.msix`). Device family: Windows 10/11 Desktop (the package
+needs Windows 10 2004).
 
 ## Submission options
 
@@ -45,6 +47,10 @@ Desktop app (WPF, .NET) that rings the other PCs of a local network. Full trust 
 ```
 No account, no sign-in. LocalBell rings the other PCs of the local network that run it: alone on a network it shows "No computer online", which is expected. To try a ring, run it on a second PC of the same network: each one lists the other, "Ring" shows a popup on the other one, its reply comes back on the row. Alone: Settings (from the Start menu or the bell near the clock) > Ring > the play button plays the bell; Settings > Popup shows the two popups.
 ```
+
+## What's new (each submission, both listings)
+
+**0.1.6**: empty, the first submission.
 
 ## Store listing: English (en-us)
 
@@ -73,6 +79,8 @@ The bell rings until someone answers, even with the sound of Windows off
 Three bells and a music box, or your own WAV or MP3 file, at a volume of its own
 Do not disturb: 30 minutes, an hour, until tomorrow; missed rings kept
 A taskbar widget: your favourite rung in one click
+The history of the rings received and sent, with "Ring back"
+Keyboard shortcuts to ring a computer or open LocalBell
 Finds the other computers by itself, on any network; by address behind a router
 No server, no account, nothing on the internet
 Light or dark theme, English and French
@@ -130,9 +138,11 @@ Des messages tout prêts et des réponses en un clic
 Sonner tout le monde en deux clics
 Une popup dans le coin de votre choix, discrète ou voyante
 La cloche sonne jusqu'à une réponse, même son de Windows coupé
-Trois cloches, ou votre propre fichier WAV ou MP3, à un volume à elle
+Trois cloches et une boîte à musique, ou votre propre fichier WAV ou MP3, à un volume à elle
 Ne pas déranger : 30 minutes, une heure, jusqu'à demain ; les sonneries manquées gardées
 Un widget dans la barre des tâches : votre favori sonné en un clic
+L'historique des sonneries reçues et envoyées, avec « Rappeler »
+Des raccourcis clavier pour sonner un PC ou ouvrir LocalBell
 Trouve les autres PC tout seul, sur n'importe quel réseau ; par adresse derrière un routeur
 Pas de serveur, pas de compte, rien sur internet
 Thème clair ou sombre, français et anglais
@@ -144,7 +154,8 @@ Thème clair ou sombre, français et anglais
 Une sonnette entre les PC de votre boutique ou de votre bureau : sonnez un collègue en un clic, avec ou sans message, et recevez sa réponse.
 ```
 
-**Captures d'écran** : `.github/hero.png` (1560 × 1000; a French picture to make).
+**Captures d'écran** : `.github/hero.fr.png` (1560 × 1000, the README picture with the texts of the French app:
+`dotnet run .local\readme\hero.cs -- D fr`).
 
 **Termes de recherche** (un par champ)
 

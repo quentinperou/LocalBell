@@ -3,9 +3,9 @@
   The Microsoft Store version of LocalBell (as NowPlaying's): a full MSIX package of the same app, built by
   scripts\build-store.ps1 next to the installer of the GitHub version (which this package does not change).
 
-  Identity: Publisher is the author's Partner Center account (the one of NowPlaying). Name is to be checked against
-  Partner Center (Product identity page) once "LocalBell" is reserved there: the Store refuses a package whose
-  identity is not the product's. The package is not signed: the Store signs it when it publishes it.
+  Identity: the one of the Product identity page in Partner Center ("LocalBell" reserved in the author's account, the
+  one of NowPlaying; checked on November 9, 2026): the Store refuses a package whose identity is not the product's.
+  The package is not signed: the Store signs it when it publishes it.
   Version: written by the build script from Directory.Build.props (0.2.0 gives 0.2.0.0, the Store wants the last
   number at 0).
 

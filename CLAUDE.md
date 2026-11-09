@@ -101,6 +101,14 @@ his home PC at his "Oui, publions", `main` and `v0.1.6` pushed.
   first real try of the updater.
   Ideas for later: a remembered window place; **groups** ("Sonner le labo", "Sonner la caisse" instead of
   everyone: "bonne idée, on garde pour plus tard", November 3).
+- **Microsoft Store, prepared** (November 9, at home, his "on va la publier sur le microsoft store, prépare le
+  nécessaire"): `dist\store\LocalBell_0.1.6.0_x64.msix` built (72.5 MB, tests passed, not signed: the Store signs
+  it); `store/listing.md` brought up to date (History, shortcuts, the music box in French, the identity to check);
+  the README picture in French for the French listing and `README.fr.md` (`.github/hero.fr.png`, `hero.cs -- D fr`);
+  History and shortcuts in the README's features. "LocalBell" reserved by him in Partner Center the same day: its
+  Product identity is the manifest's (`QuentinPerou.LocalBell`, NowPlaying's publisher), the package built stands.
+  Next: his submission with `store/listing.md`. Not tried: the packaged app on screen (his "Pas maintenant"), the
+  Windows App Certification Kit (needs administrator).
 
 ## Design decisions (approved by the author, October 31, 2026)
 

@@ -29,6 +29,8 @@ can ring them. No server, no account: the computers talk on the local network on
 - **Ring everyone** in two clicks: the first one asks for the second.
 - The row of the computer rung tells what happens: ringing, its reply ("On my way"), no answer, do not disturb.
 - A favourite (the star), rung in one click from the taskbar.
+- **Keyboard shortcuts** to ring a computer, open LocalBell or not be disturbed (none by default).
+- The **history** of the rings received and sent, as a phone's calls: "Ring back" in one click.
 
 ### Being rung
 

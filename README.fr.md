@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src=".github/hero.png" width="900" alt="LocalBell : la liste des postes dont un sonne, la popup voyante sur l'écran du collègue, les Paramètres à la page Popup, et le widget avec le favori dans la barre des tâches">
+  <img src=".github/hero.fr.png" width="900" alt="LocalBell : la liste des postes dont un sonne, la popup voyante sur l'écran du collègue, les Paramètres à la page Popup, et le widget avec le favori dans la barre des tâches">
 </p>
 
 ---
@@ -29,6 +29,8 @@ les sonner. Pas de serveur, pas de compte : les postes se parlent sur le réseau
 - **Sonner tout le monde** en deux clics : le premier demande le second.
 - La ligne du poste sonné dit ce qui se passe : ça sonne, sa réponse (« J'arrive »), pas de réponse, ne pas déranger.
 - Un favori (l'étoile), sonné en un clic depuis la barre des tâches.
+- Des **raccourcis clavier** pour sonner un poste, ouvrir LocalBell ou ne pas déranger (aucun par défaut).
+- L'**historique** des sonneries reçues et envoyées, comme les appels d'un téléphone : « Rappeler » en un clic.
 
 ### Être sonné
 
