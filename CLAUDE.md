@@ -19,10 +19,11 @@ paraît plus cohérent"): code, protocol tag and API path, settings folder, inst
 ## Project status (October 31, 2026)
 
 Version **0.1.6**, tagged `v0.1.6` at home (November 9, his "Oui, tague 0.1.6": no black square at the shop's start
-of Windows; `v0.1.2` and `v0.1.4` before it; no 0.1.3 nor 0.1.5 tag), not pushed nor released yet: `v0.1.6` is the
-first release. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
+of Windows; `v0.1.2` and `v0.1.4` before it, never pushed; no 0.1.3 nor 0.1.5 tag), **released on GitHub** the same
+day: the first release, `LocalBell-Setup-0.1.6.exe` built by the workflow. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
-repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
+repository's own config). **On GitHub since November 9, 2026**: `quentinperou/LocalBell` (public), made with `gh` from
+his home PC at his "Oui, publions", `main` and `v0.1.6` pushed.
 
 - Done: the network (`LocalBell.Core`, tested: 122 tests with the update feed and the history), the icon, the app: the list window, the popup (discreet
   or loud), the ring sounds, the bell near the clock with its menu, "do not disturb" (moon button, banner, menu),
@@ -96,8 +97,8 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
   0.1.6 it stayed in front, the author: "ça a l'air corrigé !". NowPlaying's widget, the same technique, may do the
   same (the taskbar came back over the test window twice in 6 s with NowPlaying.Widgets running): to look at in its
   own project. Tagged `v0.1.6` on November 9 (at home, on `f756847`): the widget was fine at the shop's start of
-  Windows. Next: the GitHub repository made, `git push -u origin main`, then `git push origin v0.1.6` (the first
-  release); BUREAU3 (still 0.1.0) updated from it, the first real try of the updater.
+  Windows. Pushed and released the same day (the first release). Next: BUREAU3 (still 0.1.0) updated from it, the
+  first real try of the updater.
   Ideas for later: a remembered window place; **groups** ("Sonner le labo", "Sonner la caisse" instead of
   everyone: "bonne idée, on garde pour plus tard", November 3).
 
