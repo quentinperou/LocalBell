@@ -18,8 +18,9 @@ paraît plus cohérent"): code, protocol tag and API path, settings folder, inst
 
 ## Project status (October 31, 2026)
 
-Version **0.1.4**, tagged `v0.1.4` on the shop PC (November 3; `v0.1.2` before it; no 0.1.3 tag, a build for his
-try only), not pushed nor released yet. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
+Version **0.1.6**, tagged `v0.1.6` at home (November 9, his "Oui, tague 0.1.6": no black square at the shop's start
+of Windows; `v0.1.2` and `v0.1.4` before it; no 0.1.3 nor 0.1.5 tag), not pushed nor released yet: `v0.1.6` is the
+first release. **Git repository since October 31, 2026** (branch `main`, first commit `32644a4`
 "LocalBell 0.1.0: …", made by Claude at the author's request, as QuentinPerou with his GitHub noreply address in the
 repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBell` from home with his account.
 
@@ -88,13 +89,15 @@ repository's own config). Not on GitHub yet: he publishes `quentinperou/LocalBel
 - **0.1.5** (November 4, built and installed on the shop PC, committed `3d95c9a`, no tag until his next start of
   Windows): his widget, started with Windows, was a black square (see the
   widget in Architecture): it is made again once 90 s after a start with Windows.
-- **0.1.6** (November 4, installed on the shop PC, not committed): with LocalBell running, the right-click menus of
+- **0.1.6** (November 4, installed on the shop PC, committed `f756847`): with LocalBell running, the right-click menus of
   every other app went behind the taskbar (fine once it quit): the widget, raised every 2 s and at each change of the
   window in front, took the taskbar it belongs to over them. Raised alone now (`SWP_NOOWNERZORDER`). Checked with a
   topmost test window laid over the taskbar (`WindowFromPoint`): under 0.1.5 the taskbar was over it at once; under
   0.1.6 it stayed in front, the author: "ça a l'air corrigé !". NowPlaying's widget, the same technique, may do the
   same (the taskbar came back over the test window twice in 6 s with NowPlaying.Widgets running): to look at in its
-  own project. Tag `v0.1.6` after his next start of Windows (the black square of 0.1.5).
+  own project. Tagged `v0.1.6` on November 9 (at home, on `f756847`): the widget was fine at the shop's start of
+  Windows. Next: the GitHub repository made, `git push -u origin main`, then `git push origin v0.1.6` (the first
+  release); BUREAU3 (still 0.1.0) updated from it, the first real try of the updater.
   Ideas for later: a remembered window place; **groups** ("Sonner le labo", "Sonner la caisse" instead of
   everyone: "bonne idée, on garde pour plus tard", November 3).
 
